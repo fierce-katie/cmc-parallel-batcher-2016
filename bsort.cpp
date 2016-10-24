@@ -20,6 +20,17 @@ void print_comparators(vector<comparator> cmp)
     printf("%lu\n", cmp.size());
 }
 
+void swap(comparator cmp, vector<int> &v)
+{
+    int fst = cmp.first;
+    int snd = cmp.second;
+    if (v[fst] > v[snd]) {
+        int tmp = v[fst];
+        v[fst] = v[snd];
+        v[snd] = tmp;
+    }
+}
+
 void join(vector<int> idx_up, int n0, vector<int> idx_down, int n1,
           vector<comparator> &cmp)
 {
@@ -155,5 +166,4 @@ int main(int argc, char **argv)
     print_comparators(cmp);
     return 0;
 }
-
 
