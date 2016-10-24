@@ -1,15 +1,7 @@
-#include <stdio.h>
-#include <cmath>
 #include <vector>
+#include <cmath>
 
 using namespace std;
-
-void print_vector(vector<int> &v, int n)
-{
-    for (int i = 0; i < n; i++)
-        printf("%d ", v[i]);
-    putchar('\n');
-}
 
 bool is_sorted_binary(vector<int> &v, int n)
 {
@@ -41,20 +33,3 @@ void generate_tests(int n, vector<vector<int> > &tests)
     }
 }
 
-int main(int argc, char **argv)
-{
-    int n;
-    sscanf(argv[1], "%d", &n);
-    vector<vector<int> > tests;
-    generate_tests(n, tests);
-    vector<vector<int> >::iterator it;
-    for (it = tests.begin(); it != tests.end(); it++) {
-        print_vector(*it, n);
-        if (is_sorted_binary(*it, n))
-            putchar('+');
-        else
-            putchar('-');
-        putchar('\n');
-    }
-    return 0;
-}
