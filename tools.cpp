@@ -3,6 +3,17 @@
 
 using namespace std;
 
+void swap(comparator cmp, vector<int> &v)
+{
+    int fst = cmp.first;
+    int snd = cmp.second;
+    if (v[fst] > v[snd]) {
+        int tmp = v[fst];
+        v[fst] = v[snd];
+        v[snd] = tmp;
+    }
+}
+
 void print_vector(vector<int> &v, int n)
 {
     for (int i = 0; i < n; i++)

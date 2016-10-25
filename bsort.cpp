@@ -1,18 +1,8 @@
 #include <stdio.h>
 #include "tools.h"
+#include "test.h"
 
 using namespace std;
-
-void swap(comparator cmp, vector<int> &v)
-{
-    int fst = cmp.first;
-    int snd = cmp.second;
-    if (v[fst] > v[snd]) {
-        int tmp = v[fst];
-        v[fst] = v[snd];
-        v[snd] = tmp;
-    }
-}
 
 void join(vector<int> idx_up, int n0, vector<int> idx_down, int n1,
           vector<comparator> &cmp)
@@ -121,6 +111,8 @@ int main(int argc, char **argv)
         sort(idx, n0, cmp);
     }
     print_comparators(cmp);
+    if (n0 + n1 <= 15)
+        run_tests(n0 + n1, cmp);
     return 0;
 }
 

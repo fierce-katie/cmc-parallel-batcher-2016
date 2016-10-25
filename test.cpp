@@ -1,5 +1,8 @@
 #include <vector>
 #include <cmath>
+#include <stdio.h>
+
+#include "test.h"
 
 using namespace std;
 
@@ -33,3 +36,26 @@ void generate_tests(int n, vector<vector<int> > &tests)
     }
 }
 
+void do_sort(vector<int> &v, vector<comparator> &cmp)
+{
+    vector<comparator>::iterator it;
+    for (it = cmp.begin(); it != cmp.end(); it++)
+        swap(*it, v);
+    return;
+}
+
+void run_tests(int n, vector<comparator> &cmp) {
+    printf("\nRunning tests...\n");
+    vector<vector<int> > tests;
+    generate_tests(n, tests);
+    vector<vector<int> >::iterator it;
+    for (it = tests.begin(); it != tests.end(); it++) {
+        do_sort(*it, cmp);
+        if (!is_sorted_binary(*it, n)) {
+            printf("Test failed!\n");
+            return;
+        }
+    }
+    printf("All tests have passed.\n");
+    return;
+}
