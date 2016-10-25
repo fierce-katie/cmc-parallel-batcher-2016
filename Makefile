@@ -6,3 +6,6 @@ CXXFLAGS = -g -Wall
 
 bsort: bsort.cpp $(OBJMODULES)
 	$(CXX) $(CXXFLAGS) $^ -o $@
+
+clean:
+	rm -f *.o bsort

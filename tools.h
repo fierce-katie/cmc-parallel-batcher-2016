@@ -1,3 +1,5 @@
+// Catherine Galkina, group 524, year 2016
+// File tools.h
 #ifndef BSORT_TOOLS
 #define BSORT_TOOLS
 

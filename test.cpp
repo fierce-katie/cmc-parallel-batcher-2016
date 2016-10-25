@@ -1,3 +1,5 @@
+// Catherine Galkina, group 524, year 2016
+// File test.cpp
 #include <vector>
 #include <cmath>
 #include <stdio.h>

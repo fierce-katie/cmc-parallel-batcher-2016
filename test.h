@@ -1,3 +1,5 @@
+// Catherine Galkina, group 524, year 2016
+// File test.h
 #ifndef BSORT_TEST
 #define BSORT_TEST
 
