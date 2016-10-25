@@ -5,6 +5,7 @@
 
 using namespace std;
 
+
 void swap(comparator cmp, vector<int> &v)
 {
     int fst = cmp.first;
@@ -55,5 +56,24 @@ bool check_args(int argc, char **argv, int &n0, int &n1)
         return false;
     }
     return true;
+}
+
+int count_tacts(int n, std::vector<comparator> &cmp)
+{
+    vector<int> v(n);
+    vector<comparator>::iterator it;
+    int max;
+    for (it = cmp.begin(); it != cmp.end(); it++) {
+        int fst = it->first;
+        int snd = it->second;
+        max = v[fst] > v[snd] ? v[fst] : v[snd];
+        v[fst] = max + 1;
+        v[snd] = max + 1;
+    }
+    max = 0;
+    for (int i = 0; i < n; i++)
+        if (v[i] > max)
+            max = v[i];
+    return max;
 }
 

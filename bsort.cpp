@@ -63,8 +63,6 @@ void join(vector<int> idx_up, int n0, vector<int> idx_down, int n1,
 
 void sort(vector<int>idx, int n, vector<comparator> &cmp)
 {
-    //printf("Sorting idx:\n");
-    //print_vector(idx, n);
     if (n == 1) {
         return;
     }
@@ -112,9 +110,14 @@ int main(int argc, char **argv)
             idx.push_back(i);
         sort(idx, n0, cmp);
     }
+
+    // Printing result
     print_comparators(cmp);
-    if (n0 + n1 <= 15)
-        run_tests(n0 + n1, cmp);
+    printf("%d\n", count_tacts(n0 + n1, cmp));
+
+    // Run tests for sorting <= 15 elems
+    if (!n1 && n0 <= 15)
+        run_tests(n0, cmp);
     return 0;
 }
 
