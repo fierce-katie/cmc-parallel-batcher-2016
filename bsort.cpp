@@ -13,7 +13,7 @@ void join(vector<int> idx_up, int n0, vector<int> idx_down, int n1,
     if (n == 1)
         return;
 
-    if (n == 2) {
+    if (n0 == 1 && n1 == 1) {
         cmp.push_back(comparator(idx_up[0], idx_down[0]));
         return;
     }
