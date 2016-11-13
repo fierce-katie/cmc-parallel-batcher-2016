@@ -1,4 +1,4 @@
-OBJMODULES = tools.o test.o
+OBJMODULES = tools.o test.o point.o
 CXXFLAGS = -g -Wall
 
 %.o: %.cpp %.h
