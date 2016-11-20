@@ -1,0 +1,80 @@
+\documentclass[oneside,final,14pt]{extreport}
+\usepackage[T1,T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+\usepackage{vmargin}
+\usepackage{textcomp}
+\newcommand*{\No}{\textnumero}
+\setpapersize{A4}
+\setmarginsrb{3cm}{2cm}{1cm}{2cm}{0pt}{0mm}{0pt}{13mm}
+\usepackage{indentfirst}
+\sloppy
+\setcounter{page}{2}
+\clubpenalty = 10000
+\widowpenalty = 10000
+\setlength{\parskip}{0.3cm}
+
+\begin{document}
+
+\tableofcontents
+
+\chapter*{Постановка задачи}
+\addcontentsline{toc}{chapter}{Постановка задачи}
+
+В задаче требовалось реализовать параллельную сортировку Бэтчера для структур,
+представляющих точки на регулярной сетке (\texttt{Point}), вдоль одной из
+координат ($x$ или $y$).
+
+Структура \texttt{Point} имеет следующий вид:
+\begin{verbatim}
+    Point {
+        float coord[2];
+        int index;
+    };
+\end{verbatim}
+
+Пусть сетка размерности $n_1 * n_2$ представляется массивом таких структур
+\texttt{P[n1 * n2]}, а для инициализации координат точек используются функции
+\texttt{float x(int i, int j)} и \texttt{float y(int i, int j)}.
+Тогда \texttt{P[i*n2+j].coord[0] = x(i, j)},
+\texttt{P[i*n2+j].coord[1] = y(i,j)}, \texttt{P[i*n2+j].index = i*n2+j}, где $i = \overline{0, n_1-1},
+j = \overline{0,n_2-1}$.
+
+На каждом процессоре должно обрабатываться одинаковое количество элементов.
+Каждый процессор выполняет упорядочивание элементов независимо от других.
+Слияние каждого отсортированного массива должно происходить в соответствии с
+расписанием, задаваемым сетью сортировки Бэтчера.
+
+После окончания работы программы на каждом процессе должно находиться одинаковое
+количество элементов структуры \texttt{Point}. Каждый элемент структуры
+\texttt{Point} одного процесса должен находиться левее по координате
+по сравнению с элементом структуры \texttt{Point} любого другого процесса с
+б\'{о}льшим рангом.
+
+Программа должна демонстрировать эффективность не менее 80\% от максимально
+возможной на числе вычислительных ядер не менее 128.
+
+\chapter*{Метод решения}
+\addcontentsline{toc}{chapter}{Метод решения}
+
+\section*{Построение сети слияния}
+\addcontentsline{toc}{section}{Построение сети слияния}
+
+\section*{Распределение элементов по процессорам}
+\addcontentsline{toc}{section}{Распределение элементов по процессорам}
+
+\section*{Сортировка элементов}
+\addcontentsline{toc}{section}{Сортировка элементов}
+
+\section*{Слияние отсортированных фрагментов}
+\addcontentsline{toc}{section}{Слияние отсортированных фрагментов}
+
+\chapter*{Используемая вычислительная система}
+\addcontentsline{toc}{chapter}{Используемая вычислительная система}
+
+\chapter*{Анализ полученных результатов}
+\addcontentsline{toc}{chapter}{Анализ полученных результатов}
+
+\end{document}
+
+
