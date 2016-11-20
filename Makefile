@@ -5,7 +5,7 @@ CXXFLAGS = -g -Wall
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 bsort: bsort.cpp $(OBJMODULES)
-	$(CXX) $(CXXFLAGS) $^ -o $@
+	mpic++ $(CXXFLAGS) $^ -o $@
 
 clean:
 	rm -f *.o bsort

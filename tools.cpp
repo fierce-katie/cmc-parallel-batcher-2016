@@ -32,6 +32,39 @@ void print_comparators(vector<comparator> &cmp)
     printf("%lu\n", cmp.size());
 }
 
+void print_points(vector<Point> p, int n)
+{
+    vector<Point>::iterator it;
+    for (it = p.begin(); it != p.end(); it++) {
+        Point point = *it;
+        printf("%d: (%f, %f)\n", point.GetIndex(), point.GetX(), point.GetY());
+    }
+}
+
+bool check_args(int argc, char **argv, int &nx, int &ny)
+{
+    if (argc < 3) {
+        printf("Wrong arguments. Usage: bsort nx ny\n");
+        return false;
+    }
+    int check = sscanf(argv[1], "%d", &nx);
+    if (!check) {
+        printf("nx must be int: %s\n", argv[1]);
+        return false;
+    }
+    check = sscanf(argv[2], "%d", &ny);
+    if (!check) {
+        printf("ny must be int: %s\n", argv[2]);
+        return false;
+    }
+    if (!((nx >= 1) && (ny >= 1))) {
+        printf("Wrong n1 or n2\n");
+        return false;
+    }
+    return true;
+}
+
+#if 0
 bool check_args(int argc, char **argv, int &n0, int &n1)
 {
     if (argc < 2) {
@@ -57,6 +90,7 @@ bool check_args(int argc, char **argv, int &n0, int &n1)
     }
     return true;
 }
+#endif
 
 int count_tacts(int n, std::vector<comparator> &cmp)
 {

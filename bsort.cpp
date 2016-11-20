@@ -1,8 +1,12 @@
 // Catherine Galkina, group 524, year 2016
 // File bsort.cpp
 #include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <mpi.h>
+
 #include "tools.h"
-#include "test.h"
+#include "point.h"
 
 using namespace std;
 
@@ -86,6 +90,48 @@ void sort(vector<int>idx, int n, vector<comparator> &cmp)
 
 int main(int argc, char **argv)
 {
+    int nx, ny;
+
+    // Parsing command line arguments
+    if (!check_args(argc, argv, nx, ny))
+        return 1;
+
+    MPI_Init(&argc, &argv);
+
+    int rank, procs;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &procs);
+
+    // Comparators network
+    vector<comparator> cmp;
+    vector<int> idx;
+    for (int i = 0; i < procs; i++)
+        idx.push_back(i);
+    sort(idx, procs, cmp);
+
+    // Calculating elems per processor
+    int n = nx*ny;
+    int fake = n % procs ? (procs - n % procs) : 0;
+    int elems = n + fake;
+    int proc_elems = elems / procs;
+    // Initializing points
+    srand(time(NULL));
+    vector<Point> points = init_points(nx, ny, fake);
+    if (!rank) {
+        printf("Procs: %d\nElems per proc: %d\n", procs, proc_elems);
+        print_points(points, elems);
+    }
+
+    // Printing result
+    // printf("MPI:\n  rank = %d\n  procs = %d\n", rank, procs);
+    // if (!rank) print_comparators(cmp);
+
+    MPI_Finalize();
+    return 0;
+}
+#if 0
+int main(int argc, char **argv)
+{
     vector<comparator> cmp;
     int n0, n1;
 
@@ -120,4 +166,4 @@ int main(int argc, char **argv)
         run_tests(n0, cmp);
     return 0;
 }
-
+#endif
