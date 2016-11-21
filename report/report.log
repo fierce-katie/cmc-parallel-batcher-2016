@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013/Debian) (format=pdflatex 2015.11.14)  20 NOV 2016 22:35
+This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013/Debian) (format=pdflatex 2015.11.14)  21 NOV 2016 22:25
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -704,19 +704,19 @@ r/m/n/14.4 , \T2A/cmtt/m/n/14.4 P[i*n2+j].coord[1] = y(i,j)\T2A/cmr/m/n/14.4 ,
 
 ] [4
 
-] [5
+] [5] [6
 
-] [6
+] [7
 
 ] (./report.aux) ) 
 Here is how much of TeX's memory you used:
- 2185 strings out of 493304
- 27740 string characters out of 6139870
+ 2189 strings out of 493304
+ 27792 string characters out of 6139870
  75627 words of memory out of 5000000
- 5646 multiletter control sequences out of 15000+600000
+ 5650 multiletter control sequences out of 15000+600000
  10961 words of font info for 27 fonts, out of 8000000 for 9000
  957 hyphenation exceptions out of 8191
- 25i,5n,23p,542b,189s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 25i,5n,23p,525b,189s stack positions out of 5000i,500n,10000p,200000b,80000s
 {/usr/share/texmf/fonts/enc/dvips/cm-super/cm-super-t2a.enc}<
 /usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></usr/s
 hare/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/share/te
@@ -726,10 +726,10 @@ e1/public/cm-super/sfbx1440.pfb></usr/share/texmf/fonts/type1/public/cm-super/s
 fbx2074.pfb></usr/share/texmf/fonts/type1/public/cm-super/sfbx3583.pfb></usr/sh
 are/texmf/fonts/type1/public/cm-super/sfrm1440.pfb></usr/share/texmf/fonts/type
 1/public/cm-super/sftt1440.pfb>
-Output written on report.pdf (5 pages, 120209 bytes).
+Output written on report.pdf (6 pages, 126640 bytes).
 PDF statistics:
- 57 PDF objects out of 1000 (max. 8388607)
- 40 compressed objects within 1 object stream
+ 60 PDF objects out of 1000 (max. 8388607)
+ 42 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
  1 words of extra memory for PDF output out of 10000 (max. 10000000)
 

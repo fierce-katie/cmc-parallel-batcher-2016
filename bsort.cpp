@@ -123,8 +123,14 @@ int main(int argc, char **argv)
     }
 
     // Printing result
-    // printf("MPI:\n  rank = %d\n  procs = %d\n", rank, procs);
-    // if (!rank) print_comparators(cmp);
+    if (!rank) {
+        for (int r = 0; r < procs; r++) {
+            printf("\nI am number %d and my elems are:\n", r);
+            for (int i = r; i < elems; i += procs)
+                printf("%d: (%f, %f)\n", points[i].GetIndex(), points[i].GetX(),
+                        points[i].GetY());
+        }
+    }
 
     MPI_Finalize();
     return 0;
