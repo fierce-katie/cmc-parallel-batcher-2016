@@ -129,17 +129,24 @@ int main(int argc, char **argv)
     int proc_elems = elems / procs;
 
     // Initializing points
-    srand(time(NULL));
-    std::vector<Point> points = init_points(nx, ny, fake);
-    if (!rank) {
-        printf("Procs: %d\nElems per proc: %d\n", procs, proc_elems);
-        print_points(points, elems);
-    }
     std::vector<Point> proc_points;
-    make_proc_points(rank, elems, procs, points, proc_points);
-    std::sort(proc_points.begin(), proc_points.end(), compare_points);
-
-
+    if (!rank) {
+      srand(time(NULL));
+      std::vector<Point> points = init_points(nx, ny, fake);
+      printf("Procs: %d\nElems per proc: %d\n", procs, proc_elems);
+      print_points(points, elems);
+      make_proc_points(rank, elems, procs, points, proc_points);
+      // Send to others
+      for (int r = 1; r < procs; r++) {
+        std::vector<Point> other_proc_points;
+        make_proc_points(r, elems, procs, points, other_proc_points);
+        //send MPi
+      }
+    } else {
+      proc_points.resize(proc_elems);
+      // recieve MPI
+      std::sort(proc_points.begin(), proc_points.end(), compare_points);
+    }
     // Printing result
     for (int i = 0; i < proc_elems; i++)
       printf("%d %d: (%f, %f)\n", rank, proc_points[i].GetIndex(), proc_points[i].GetX(),
