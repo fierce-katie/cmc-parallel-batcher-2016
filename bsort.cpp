@@ -4,14 +4,13 @@
 #include <stdlib.h>
 #include <time.h>
 #include <mpi.h>
+#include <algorithm>
 
 #include "tools.h"
 #include "point.h"
 
-using namespace std;
-
-void join(vector<int> idx_up, int n0, vector<int> idx_down, int n1,
-          vector<comparator> &cmp)
+void join(std::vector<int> idx_up, int n0, std::vector<int> idx_down, int n1,
+          std::vector<comparator> &cmp)
 {
     int n = n0 + n1;
     if (n == 1)
@@ -24,15 +23,15 @@ void join(vector<int> idx_up, int n0, vector<int> idx_down, int n1,
 
     int n0_even = n0/2;
     int n0_odd = n0 - n0_even;
-    vector<int> idx_up_even(n0_even);
-    vector<int> idx_up_odd(n0_odd);
+    std::vector<int> idx_up_even(n0_even);
+    std::vector<int> idx_up_odd(n0_odd);
 
     int n1_even = n1/2;
     int n1_odd = n1 - n1_even;
-    vector<int> idx_down_even(n1_even);
-    vector<int> idx_down_odd(n1_odd);
+    std::vector<int> idx_down_even(n1_even);
+    std::vector<int> idx_down_odd(n1_odd);
 
-    vector<int> idx_result;
+    std::vector<int> idx_result;
 
     int i, i0 = 0, i1 = 0;
     for (i = 0; i < n0; i++)
@@ -65,7 +64,7 @@ void join(vector<int> idx_up, int n0, vector<int> idx_down, int n1,
         cmp.push_back(comparator(idx_result[i], idx_result[i + 1]));
 }
 
-void sort(vector<int>idx, int n, vector<comparator> &cmp)
+void sort(std::vector<int>idx, int n, std::vector<comparator> &cmp)
 {
     if (n == 1) {
         return;
@@ -74,8 +73,8 @@ void sort(vector<int>idx, int n, vector<comparator> &cmp)
     int n0 = n/2;
     int n1 = n - n0;
 
-    vector<int> idx_up;
-    vector<int> idx_down;
+    std::vector<int> idx_up;
+    std::vector<int> idx_down;
 
     int i;
     for (i = 0; i < n0; i++)
@@ -86,6 +85,23 @@ void sort(vector<int>idx, int n, vector<comparator> &cmp)
     sort(idx_up, n0, cmp);
     sort(idx_down, n1, cmp);
     join(idx_up, n0, idx_down, n1, cmp);
+}
+
+void make_comparators(int procs, std::vector<comparator> &cmp)
+{
+    std::vector<int> idx;
+    for (int i = 0; i < procs; i++)
+        idx.push_back(i);
+    sort(idx, procs, cmp);
+    return;
+}
+
+void make_proc_points(int rank, int elems, int procs,
+                      std::vector<Point> &all, std::vector<Point> &my)
+{
+  for (int i = rank; i < elems; i += procs)
+    my.push_back(all[i]);
+  return;
 }
 
 int main(int argc, char **argv)
@@ -103,34 +119,31 @@ int main(int argc, char **argv)
     MPI_Comm_size(MPI_COMM_WORLD, &procs);
 
     // Comparators network
-    vector<comparator> cmp;
-    vector<int> idx;
-    for (int i = 0; i < procs; i++)
-        idx.push_back(i);
-    sort(idx, procs, cmp);
+    std::vector<comparator> cmp;
+    make_comparators(procs, cmp);
 
     // Calculating elems per processor
     int n = nx*ny;
     int fake = n % procs ? (procs - n % procs) : 0;
     int elems = n + fake;
     int proc_elems = elems / procs;
+
     // Initializing points
     srand(time(NULL));
-    vector<Point> points = init_points(nx, ny, fake);
+    std::vector<Point> points = init_points(nx, ny, fake);
     if (!rank) {
         printf("Procs: %d\nElems per proc: %d\n", procs, proc_elems);
         print_points(points, elems);
     }
+    std::vector<Point> proc_points;
+    make_proc_points(rank, elems, procs, points, proc_points);
+    std::sort(proc_points.begin(), proc_points.end(), compare_points);
+
 
     // Printing result
-    if (!rank) {
-        for (int r = 0; r < procs; r++) {
-            printf("\nI am number %d and my elems are:\n", r);
-            for (int i = r; i < elems; i += procs)
-                printf("%d: (%f, %f)\n", points[i].GetIndex(), points[i].GetX(),
-                        points[i].GetY());
-        }
-    }
+    for (int i = 0; i < proc_elems; i++)
+      printf("%d %d: (%f, %f)\n", rank, proc_points[i].GetIndex(), proc_points[i].GetX(),
+          proc_points[i].GetY());
 
     MPI_Finalize();
     return 0;

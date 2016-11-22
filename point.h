@@ -20,5 +20,6 @@ public:
 std::vector<Point> init_points(int n1, int n2, int fake);
 float x(int i, int j);
 float y(int i, int j);
+bool compare_points(const Point &a, const Point &b);
 
 #endif

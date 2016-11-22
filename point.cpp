@@ -31,3 +31,8 @@ float y(int i, int j)
 {
     return (float)rand()/(float)(RAND_MAX/(i*j+1));
 }
+
+bool compare_points(const Point &a, const Point &b)
+{
+  return (a.GetX() < b.GetX());
+}
