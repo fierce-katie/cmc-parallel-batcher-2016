@@ -2,23 +2,21 @@
 // File point.cpp
 
 #include <stdlib.h>
+#include <time.h>
+#include <stdio.h>
 
 #include "point.h"
 
-using namespace std;
-
-vector<Point> init_points(int n1, int n2, int fake)
+Point* init_points(int nx, int ny, int rank, int n, bool fake)
 {
-    int n = n1 * n2 + fake;
-    vector<Point> res(n);
-    for (int i = 0; i < n1; i++) {
-        for (int j = 0; j < n2; j++) {
-            int idx = i*n2 + j;
-            res[idx] = Point(x(i, j), y(i, j), idx);
-        }
-    }
-    for (int i = 0; i < fake; i++)
-        res[n1*n2 + i] = Point(0, 0, -i-1);
+    srand(time(NULL) + rank);
+    Point *res = new Point[n];
+    //int i0, i1, j0, j1; //FIXME
+    int k = 0;
+    for (int i = 0, j = 0; i < n; i++)
+        res[k++] = Point(x(i, j), y(i, j), i*ny + j);
+    if (fake)
+        res[n] = Point();
     return res;
 }
 
@@ -32,7 +30,12 @@ float y(int i, int j)
     return (float)rand()/(float)(RAND_MAX/(i*j+1));
 }
 
-bool compare_points(const Point &a, const Point &b)
+int compare_points(const void *a, const void *b)
 {
-  return (a.GetX() < b.GetX());
+  float ax = ((Point * const)a)->GetX();
+  float bx = ((Point * const)b)->GetX();
+  if (ax < bx)
+      return -1;
+  else
+      return 1;
 }

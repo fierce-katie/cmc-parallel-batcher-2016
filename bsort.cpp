@@ -2,9 +2,7 @@
 // File bsort.cpp
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
 #include <mpi.h>
-#include <algorithm>
 
 #include "tools.h"
 #include "point.h"
@@ -129,21 +127,44 @@ int main(int argc, char **argv)
     int proc_elems = elems / procs;
 
     // Initializing points
-    srand(time(NULL));
-    std::vector<Point> points = init_points(nx, ny, fake);
-    if (!rank) {
-        printf("Procs: %d\nElems per proc: %d\n", procs, proc_elems);
-        print_points(points, elems);
+    Point *proc_points =
+        init_points(nx, ny, rank, proc_elems, rank > procs - fake - 1);
+    // Sorting
+    qsort(proc_points, proc_elems, sizeof(Point), compare_points);
+
+    // Exchanging elements
+    Point *other_points = new Point[proc_elems];
+    Point *tmp_points = new Point[proc_elems];
+    std::vector<comparator>::iterator it;
+    for (it = cmp.begin(); it != cmp.end(); it++) {
+        //printf("%d %d\n", it->first, it->second);
+        if (rank == it->first) {
+            MPI_Send(proc_points, proc_elems, sizeof(Point),
+                     it->second, 0, MPI_COMM_WORLD);
+            MPI_Recv(other_points, proc_elems, sizeof(Point),
+                     it->second, 0, MPI_COMM_WORLD, &status);
+            for (int idx = 0, other_idx = 0, tmp_idx = 0;
+                 tmp_idx < proc_elems; tmp_idx++) {
+                Point my = proc_points[idx];
+                Point other = other_points[other_idx];
+                if (my < other) {
+                    tmp_points[tmp_idx] = my;
+                    idx++;
+                } else {
+                    tmp_points[tmp_idx] = other;
+                    other_idx++;
+                }
+            }
+            swap_ptr(&elems_result, &elems_temp);
+        }
+
+        if (rank == it->second) {
+            MPI_Recv(other_points, proc_elems, sizeof(Point),
+                     it->first, 0, MPI_COMM_WORLD, &status);
+            MPI_Send(proc_points, proc_elems, sizeof(Point),
+                     it->first, 0, MPI_COMM_WORLD);
+        }
     }
-    std::vector<Point> proc_points;
-    make_proc_points(rank, elems, procs, points, proc_points);
-    std::sort(proc_points.begin(), proc_points.end(), compare_points);
-
-
-    // Printing result
-    for (int i = 0; i < proc_elems; i++)
-      printf("%d %d: (%f, %f)\n", rank, proc_points[i].GetIndex(), proc_points[i].GetX(),
-          proc_points[i].GetY());
 
     MPI_Finalize();
     return 0;
