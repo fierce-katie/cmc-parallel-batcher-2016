@@ -94,12 +94,69 @@ void make_comparators(int procs, std::vector<comparator> &cmp)
     return;
 }
 
-void make_proc_points(int rank, int elems, int procs,
-                      std::vector<Point> &all, std::vector<Point> &my)
+void swap_ptr(void *ptr1_ptr, void *ptr2_ptr)
 {
-  for (int i = rank; i < elems; i += procs)
-    my.push_back(all[i]);
-  return;
+    void **ptr1 = (void **)ptr1_ptr;
+    void **ptr2 = (void **)ptr2_ptr;
+
+    void *tmp = *ptr1;
+    *ptr1 = *ptr2;
+    *ptr2 = tmp;
+}
+
+void exchange_points(Point **points_ptr, int proc_elems,
+                     std::vector<comparator> &cmp, int rank)
+{
+    Point *proc_points = *points_ptr;
+    Point *tmp_points = new Point[proc_elems];
+    Point *other_points = new Point[proc_elems];
+    MPI_Status status;
+    Point p;
+    MPI_Datatype MPI_POINT = p.getType();
+    std::vector<comparator>::iterator it;
+    for (it = cmp.begin(); it != cmp.end(); it++) {
+        if (rank == it->first) {
+            MPI_Send(proc_points, proc_elems, MPI_POINT,
+                     it->second, 0, MPI_COMM_WORLD);
+            MPI_Recv(other_points, proc_elems, MPI_POINT,
+                     it->second, 0, MPI_COMM_WORLD, &status);
+            int idx = 0;
+            int other_idx = 0;
+            for (int tmp_idx = 0; tmp_idx < proc_elems; tmp_idx++) {
+                Point my = proc_points[idx];
+                Point other = other_points[other_idx];
+                if (my.GetX() < other.GetX()) {
+                    tmp_points[tmp_idx] = my;
+                    idx++;
+                } else {
+                    tmp_points[tmp_idx] = other;
+                    other_idx++;
+                }
+            }
+            swap_ptr(&proc_points, &tmp_points);
+        }
+
+        if (rank == it->second) {
+            MPI_Recv(other_points, proc_elems, MPI_POINT,
+                     it->first, 0, MPI_COMM_WORLD, &status);
+            MPI_Send(proc_points, proc_elems, MPI_POINT,
+                     it->first, 0, MPI_COMM_WORLD);
+            int idx = proc_elems - 1;
+            int other_idx = proc_elems - 1;
+            for (int tmp_idx = proc_elems - 1; tmp_idx >= 0; tmp_idx++) {
+                Point my = proc_points[idx];
+                Point other = other_points[other_idx];
+                if (my.GetX() > other.GetX()) {
+                    tmp_points[tmp_idx] = my;
+                    idx--;
+                } else {
+                    tmp_points[tmp_idx] = other;
+                    other_idx--;
+                }
+            }
+            swap_ptr(&proc_points, &tmp_points);
+        }
+    }
 }
 
 int main(int argc, char **argv)
@@ -129,42 +186,20 @@ int main(int argc, char **argv)
     // Initializing points
     Point *proc_points =
         init_points(nx, ny, rank, proc_elems, rank > procs - fake - 1);
+
+    for (int i = 0; i < proc_elems; i++)
+        printf("%d %d %f\n", rank, proc_points[i].GetIndex(), proc_points[i].GetX());
+
     // Sorting
-    qsort(proc_points, proc_elems, sizeof(Point), compare_points);
+    qsort(proc_points, proc_elems, sizeof(Point), compare_points); //FIXME
+    for (int i = 0; i < proc_elems; i++)
+        printf("%d %d %f sorted\n", rank, proc_points[i].GetIndex(), proc_points[i].GetX());
 
     // Exchanging elements
-    Point *other_points = new Point[proc_elems];
-    Point *tmp_points = new Point[proc_elems];
-    std::vector<comparator>::iterator it;
-    for (it = cmp.begin(); it != cmp.end(); it++) {
-        //printf("%d %d\n", it->first, it->second);
-        if (rank == it->first) {
-            MPI_Send(proc_points, proc_elems, sizeof(Point),
-                     it->second, 0, MPI_COMM_WORLD);
-            MPI_Recv(other_points, proc_elems, sizeof(Point),
-                     it->second, 0, MPI_COMM_WORLD, &status);
-            for (int idx = 0, other_idx = 0, tmp_idx = 0;
-                 tmp_idx < proc_elems; tmp_idx++) {
-                Point my = proc_points[idx];
-                Point other = other_points[other_idx];
-                if (my < other) {
-                    tmp_points[tmp_idx] = my;
-                    idx++;
-                } else {
-                    tmp_points[tmp_idx] = other;
-                    other_idx++;
-                }
-            }
-            swap_ptr(&elems_result, &elems_temp);
-        }
+    exchange_points(&proc_points, proc_elems, cmp, rank);
 
-        if (rank == it->second) {
-            MPI_Recv(other_points, proc_elems, sizeof(Point),
-                     it->first, 0, MPI_COMM_WORLD, &status);
-            MPI_Send(proc_points, proc_elems, sizeof(Point),
-                     it->first, 0, MPI_COMM_WORLD);
-        }
-    }
+    for (int i = 0; i < proc_elems; i++)
+        printf("%d %d %f exchanged\n", rank, proc_points[i].GetIndex(), proc_points[i].GetX());
 
     MPI_Finalize();
     return 0;

@@ -4,6 +4,7 @@
 #define BSORT_POINT
 
 #include <vector>
+#include <mpi.h>
 
 class Point {
     float coord[2];
@@ -15,6 +16,7 @@ public:
     float GetX() const { return coord[0]; }
     float GetY() const { return coord[1]; }
     int GetIndex() const { return index; }
+    MPI_Datatype getType();
 };
 
 Point* init_points(int nx, int ny, int rank, int n, bool fake);

@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <stdio.h>
+#include <cstddef>
 
 #include "point.h"
 
@@ -39,3 +40,15 @@ int compare_points(const void *a, const void *b)
   else
       return 1;
 }
+
+MPI_Datatype Point::getType()
+{
+    MPI_Datatype point;
+    MPI_Datatype types[2] = { MPI_FLOAT, MPI_INT };
+    int blocks[2] = { 2, 1 };
+    MPI_Aint disps[2] = { offsetof(Point, coord), offsetof(Point, index) };
+    MPI_Type_create_struct(2, blocks, disps, types, &point);
+    MPI_Type_commit(&point);
+    return point;
+}
+

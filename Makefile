@@ -1,11 +1,12 @@
 OBJMODULES = tools.o test.o point.o
 CXXFLAGS = -g -Wall
+MPICXX = mpic++
 
 %.o: %.cpp %.h
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+	$(MPICXX) $(CXXFLAGS) -c $< -o $@
 
 bsort: bsort.cpp $(OBJMODULES)
-	mpic++ $(CXXFLAGS) $^ -o $@
+	$(MPICXX) $(CXXFLAGS) $^ -o $@
 
 clean:
 	rm -f *.o bsort
