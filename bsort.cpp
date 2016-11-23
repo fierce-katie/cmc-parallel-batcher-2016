@@ -133,7 +133,7 @@ void exchange_points(Point **points_ptr, int proc_elems,
                     other_idx++;
                 }
             }
-            swap_ptr(&proc_points, &tmp_points);
+            swap_ptr(points_ptr, &tmp_points);
         }
 
         if (rank == it->second) {
@@ -143,7 +143,7 @@ void exchange_points(Point **points_ptr, int proc_elems,
                      it->first, 0, MPI_COMM_WORLD);
             int idx = proc_elems - 1;
             int other_idx = proc_elems - 1;
-            for (int tmp_idx = proc_elems - 1; tmp_idx >= 0; tmp_idx++) {
+            for (int tmp_idx = proc_elems - 1; tmp_idx >= 0; tmp_idx--) {
                 Point my = proc_points[idx];
                 Point other = other_points[other_idx];
                 if (my.GetX() > other.GetX()) {
@@ -154,7 +154,7 @@ void exchange_points(Point **points_ptr, int proc_elems,
                     other_idx--;
                 }
             }
-            swap_ptr(&proc_points, &tmp_points);
+            swap_ptr(points_ptr, &tmp_points);
         }
     }
 }

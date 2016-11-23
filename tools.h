@@ -11,7 +11,7 @@ typedef std::pair<int, int> comparator;
 void swap(comparator cmp, std::vector<int> &v);
 void print_vector(std::vector<int> &v, int n);
 void print_comparators(std::vector<comparator> &cmp);
-void print_points(std::vector<Point> p, int n);
+void print_points(Point* p, int n, int rank, const char *comment);
 bool check_args(int argc, char **argv, int &n0, int &n1);
 int count_tacts(int n, std::vector<comparator> &cmp);
 

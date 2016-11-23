@@ -32,12 +32,11 @@ void print_comparators(vector<comparator> &cmp)
     printf("%lu\n", cmp.size());
 }
 
-void print_points(vector<Point> p, int n)
+void print_points(Point* p, int n, int rank, const char *comment)
 {
-    vector<Point>::iterator it;
-    for (it = p.begin(); it != p.end(); it++) {
-        Point point = *it;
-        printf("%d: (%f, %f)\n", point.GetIndex(), point.GetX(), point.GetY());
+    for (int i = 0; i < n; i++) {
+        Point point = p[i];
+        printf("%d %d: %f %s\n", rank, point.GetIndex(), point.GetX(), comment);
     }
 }
 
