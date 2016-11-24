@@ -1,0 +1,5 @@
+*.o
+*.toc
+*.log
+*.aux
+habr/
