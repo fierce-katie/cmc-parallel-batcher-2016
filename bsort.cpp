@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <mpi.h>
+#include <time.h>
 
 #include "tools.h"
 #include "point.h"
@@ -186,16 +187,14 @@ int main(int argc, char **argv)
     int proc_elems = elems / procs;
 
     // Initializing points
+    srand(time(NULL) + rank);
     Point *proc_points =
-        init_points(nx, ny, rank, proc_elems, rank > procs - fake - 1);
-
-    for (int i = 0; i < proc_elems; i++)
-        printf("%d %d %f\n", rank, proc_points[i].GetIndex(), proc_points[i].GetX());
+        init_points(n, ny, procs, proc_elems, rank);
+    print_points(proc_points, proc_elems, rank, "initial");
 
     // Sorting
     qsort(proc_points, proc_elems, sizeof(Point), compare_points); //FIXME
-    for (int i = 0; i < proc_elems; i++)
-        printf("%d %d %f sorted\n", rank, proc_points[i].GetIndex(), proc_points[i].GetX());
+    print_points(proc_points, proc_elems, rank, "sorted");
 
     // Exchanging elements
     Point *tmp_points = new Point[proc_elems];
@@ -248,8 +247,7 @@ int main(int argc, char **argv)
         }
     }
 
-    for (int i = 0; i < proc_elems; i++)
-        printf("%d %d %f exchanged\n", rank, proc_points[i].GetIndex(), proc_points[i].GetX());
+    print_points(proc_points, proc_elems, rank, "result");
 
     MPI_Finalize();
     return 0;

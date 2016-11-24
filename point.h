@@ -3,7 +3,6 @@
 #ifndef BSORT_POINT
 #define BSORT_POINT
 
-#include <vector>
 #include <mpi.h>
 
 class Point {
@@ -19,7 +18,7 @@ public:
     MPI_Datatype getType();
 };
 
-Point* init_points(int nx, int ny, int rank, int n, bool fake);
+Point* init_points(int n, int ny, int procs, int proc_elems, int rank);
 float x(int i, int j);
 float y(int i, int j);
 int compare_points(const void *a, const void *b);

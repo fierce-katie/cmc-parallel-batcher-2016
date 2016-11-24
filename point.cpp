@@ -2,22 +2,26 @@
 // File point.cpp
 
 #include <stdlib.h>
-#include <time.h>
 #include <stdio.h>
 #include <cstddef>
 
 #include "point.h"
 
-Point* init_points(int nx, int ny, int rank, int n, bool fake)
+Point* init_points(int n, int ny, int procs, int proc_elems, int rank)
 {
-    srand(time(NULL) + rank);
-    Point *res = new Point[n];
-    //int i0, i1, j0, j1; //FIXME
-    int k = 0;
-    for (int i = 0, j = 0; i < n; i++)
-        res[k++] = Point(x(i, j), y(i, j), i*ny + j);
-    if (fake)
-        res[n] = Point();
+    Point *res = new Point[proc_elems];
+    int tmp = n/procs;
+    int not_fake = n % procs;
+    int real_elems = rank < not_fake ? tmp + 1 : tmp;
+    int delta;
+    if (rank < not_fake)
+        delta = rank*proc_elems;
+    else
+        delta = not_fake*proc_elems + tmp*(rank - not_fake);
+    for (int k = 0; k < real_elems; k++) {
+        int i = (k + delta) / ny, j = (k + delta) % ny;
+        res[k] = Point(x(i, j), y(i, j), i*ny + j);
+    }
     return res;
 }
 
