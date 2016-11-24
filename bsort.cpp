@@ -104,6 +104,7 @@ void swap_ptr(void *ptr1_ptr, void *ptr2_ptr)
     *ptr2 = tmp;
 }
 
+#if 0
 void exchange_points(Point **points_ptr, int proc_elems,
                      std::vector<comparator> &cmp, int rank)
 {
@@ -158,6 +159,7 @@ void exchange_points(Point **points_ptr, int proc_elems,
         }
     }
 }
+#endif
 
 int main(int argc, char **argv)
 {
@@ -196,7 +198,55 @@ int main(int argc, char **argv)
         printf("%d %d %f sorted\n", rank, proc_points[i].GetIndex(), proc_points[i].GetX());
 
     // Exchanging elements
-    exchange_points(&proc_points, proc_elems, cmp, rank);
+    Point *tmp_points = new Point[proc_elems];
+    Point *other_points = new Point[proc_elems];
+    MPI_Status status;
+    Point p;
+    MPI_Datatype MPI_POINT = p.getType();
+    std::vector<comparator>::iterator it;
+    for (it = cmp.begin(); it != cmp.end(); it++) {
+        if (rank == it->first) {
+            MPI_Send(proc_points, proc_elems, MPI_POINT,
+                     it->second, 0, MPI_COMM_WORLD);
+            MPI_Recv(other_points, proc_elems, MPI_POINT,
+                     it->second, 0, MPI_COMM_WORLD, &status);
+            int idx = 0;
+            int other_idx = 0;
+            for (int tmp_idx = 0; tmp_idx < proc_elems; tmp_idx++) {
+                Point my = proc_points[idx];
+                Point other = other_points[other_idx];
+                if (my.GetX() < other.GetX()) {
+                    tmp_points[tmp_idx] = my;
+                    idx++;
+                } else {
+                    tmp_points[tmp_idx] = other;
+                    other_idx++;
+                }
+            }
+            swap_ptr(&proc_points, &tmp_points);
+        }
+
+        if (rank == it->second) {
+            MPI_Recv(other_points, proc_elems, MPI_POINT,
+                     it->first, 0, MPI_COMM_WORLD, &status);
+            MPI_Send(proc_points, proc_elems, MPI_POINT,
+                     it->first, 0, MPI_COMM_WORLD);
+            int idx = proc_elems - 1;
+            int other_idx = proc_elems - 1;
+            for (int tmp_idx = proc_elems - 1; tmp_idx >= 0; tmp_idx--) {
+                Point my = proc_points[idx];
+                Point other = other_points[other_idx];
+                if (my.GetX() > other.GetX()) {
+                    tmp_points[tmp_idx] = my;
+                    idx--;
+                } else {
+                    tmp_points[tmp_idx] = other;
+                    other_idx--;
+                }
+            }
+            swap_ptr(&proc_points, &tmp_points);
+        }
+    }
 
     for (int i = 0; i < proc_elems; i++)
         printf("%d %d %f exchanged\n", rank, proc_points[i].GetIndex(), proc_points[i].GetX());
