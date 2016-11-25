@@ -1,4 +1,4 @@
-OBJMODULES = tools.o test.o point.o
+OBJMODULES = tools.o point.o
 CXXFLAGS = -g -Wall
 MPICXX = mpic++
 
