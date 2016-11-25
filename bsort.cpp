@@ -7,6 +7,7 @@
 
 #include "tools.h"
 #include "point.h"
+#include "dhsort.h"
 
 void join(std::vector<int> idx_up, int n0, std::vector<int> idx_down, int n1,
           std::vector<comparator> &cmp)
@@ -194,7 +195,9 @@ int main(int argc, char **argv)
 
     // Sorting
     qsort(proc_points, proc_elems, sizeof(Point), compare_points); //FIXME
+    //hsort(proc_points, proc_elems);
     print_points(proc_points, proc_elems, rank, "sorted");
+    //return 0;
 
     // Exchanging elements
     Point *tmp_points = new Point[proc_elems];
@@ -214,7 +217,7 @@ int main(int argc, char **argv)
             for (int tmp_idx = 0; tmp_idx < proc_elems; tmp_idx++) {
                 Point my = proc_points[idx];
                 Point other = other_points[other_idx];
-                if (my.GetX() < other.GetX()) {
+                if (my < other) {
                     tmp_points[tmp_idx] = my;
                     idx++;
                 } else {
@@ -235,7 +238,7 @@ int main(int argc, char **argv)
             for (int tmp_idx = proc_elems - 1; tmp_idx >= 0; tmp_idx--) {
                 Point my = proc_points[idx];
                 Point other = other_points[other_idx];
-                if (my.GetX() > other.GetX()) {
+                if (my > other) {
                     tmp_points[tmp_idx] = my;
                     idx--;
                 } else {

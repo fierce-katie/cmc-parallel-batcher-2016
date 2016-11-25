@@ -16,6 +16,10 @@ public:
     float GetY() const { return coord[1]; }
     int GetIndex() const { return index; }
     MPI_Datatype getType();
+    bool operator<(const Point &other) const
+        { return coord[0] < other.coord[0]; }
+    bool operator>(const Point &other) const
+        { return coord[0] > other.coord[0]; }
 };
 
 Point* init_points(int n, int ny, int procs, int proc_elems, int rank);
