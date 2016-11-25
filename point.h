@@ -20,6 +20,10 @@ public:
         { return coord[0] < other.coord[0]; }
     bool operator>(const Point &other) const
         { return coord[0] > other.coord[0]; }
+    bool operator<=(const Point &other) const
+        { return coord[0] <= other.coord[0]; }
+    bool operator>=(const Point &other) const
+        { return coord[0] >= other.coord[0]; }
 };
 
 Point* init_points(int n, int ny, int procs, int proc_elems, int rank);

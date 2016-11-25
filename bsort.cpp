@@ -106,63 +106,6 @@ void swap_ptr(void *ptr1_ptr, void *ptr2_ptr)
     *ptr2 = tmp;
 }
 
-#if 0
-void exchange_points(Point **points_ptr, int proc_elems,
-                     std::vector<comparator> &cmp, int rank)
-{
-    Point *proc_points = *points_ptr;
-    Point *tmp_points = new Point[proc_elems];
-    Point *other_points = new Point[proc_elems];
-    MPI_Status status;
-    Point p;
-    MPI_Datatype MPI_POINT = p.getType();
-    std::vector<comparator>::iterator it;
-    for (it = cmp.begin(); it != cmp.end(); it++) {
-        if (rank == it->first) {
-            MPI_Send(proc_points, proc_elems, MPI_POINT,
-                     it->second, 0, MPI_COMM_WORLD);
-            MPI_Recv(other_points, proc_elems, MPI_POINT,
-                     it->second, 0, MPI_COMM_WORLD, &status);
-            int idx = 0;
-            int other_idx = 0;
-            for (int tmp_idx = 0; tmp_idx < proc_elems; tmp_idx++) {
-                Point my = proc_points[idx];
-                Point other = other_points[other_idx];
-                if (my.GetX() < other.GetX()) {
-                    tmp_points[tmp_idx] = my;
-                    idx++;
-                } else {
-                    tmp_points[tmp_idx] = other;
-                    other_idx++;
-                }
-            }
-            swap_ptr(points_ptr, &tmp_points);
-        }
-
-        if (rank == it->second) {
-            MPI_Recv(other_points, proc_elems, MPI_POINT,
-                     it->first, 0, MPI_COMM_WORLD, &status);
-            MPI_Send(proc_points, proc_elems, MPI_POINT,
-                     it->first, 0, MPI_COMM_WORLD);
-            int idx = proc_elems - 1;
-            int other_idx = proc_elems - 1;
-            for (int tmp_idx = proc_elems - 1; tmp_idx >= 0; tmp_idx--) {
-                Point my = proc_points[idx];
-                Point other = other_points[other_idx];
-                if (my.GetX() > other.GetX()) {
-                    tmp_points[tmp_idx] = my;
-                    idx--;
-                } else {
-                    tmp_points[tmp_idx] = other;
-                    other_idx--;
-                }
-            }
-            swap_ptr(points_ptr, &tmp_points);
-        }
-    }
-}
-#endif
-
 int main(int argc, char **argv)
 {
     int nx, ny;
@@ -194,8 +137,7 @@ int main(int argc, char **argv)
     print_points(proc_points, proc_elems, rank, "initial");
 
     // Sorting
-    qsort(proc_points, proc_elems, sizeof(Point), compare_points); //FIXME
-    //hsort(proc_points, proc_elems);
+    hsort(proc_points, proc_elems); //FIXME
     print_points(proc_points, proc_elems, rank, "sorted");
     //return 0;
 
@@ -255,41 +197,4 @@ int main(int argc, char **argv)
     MPI_Finalize();
     return 0;
 }
-#if 0
-int main(int argc, char **argv)
-{
-    vector<comparator> cmp;
-    int n0, n1;
 
-    // Parsing command line arguments
-    if (!check_args(argc, argv, n0, n1))
-        return 1;
-
-    // Sorting or joining
-    printf("%d %d %d\n", n0, n1, 0);
-    if (n1) {
-        vector<int> idx_up;
-        vector<int> idx_down;
-        int i;
-        for (i = 0; i < n0; i++)
-            idx_up.push_back(i);
-        for (i = n0; i < n0 + n1; i++)
-            idx_down.push_back(i);
-        join(idx_up, n0, idx_down, n1, cmp);
-    } else {
-        vector<int> idx;
-        for (int i = 0; i < n0; i++)
-            idx.push_back(i);
-        sort(idx, n0, cmp);
-    }
-
-    // Printing result
-    print_comparators(cmp);
-    printf("%d\n", count_tacts(n0 + n1, cmp));
-
-    // Run tests for sorting <= 15 elems
-    if (!n1 && n0 <= 15)
-        run_tests(n0, cmp);
-    return 0;
-}
-#endif

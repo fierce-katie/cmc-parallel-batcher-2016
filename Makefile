@@ -1,4 +1,4 @@
-OBJMODULES = tools.o point.o
+OBJMODULES = tools.o point.o dhsort.o
 CXXFLAGS = -g -Wall
 MPICXX = mpic++
 
