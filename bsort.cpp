@@ -137,9 +137,9 @@ int main(int argc, char **argv)
     print_points(proc_points, proc_elems, rank, "initial");
 
     // Sorting
-    hsort(proc_points, proc_elems); //FIXME
+    dhsort(proc_points, proc_elems); //FIXME
     print_points(proc_points, proc_elems, rank, "sorted");
-    //return 0;
+    return 0;
 
     // Exchanging elements
     Point *tmp_points = new Point[proc_elems];

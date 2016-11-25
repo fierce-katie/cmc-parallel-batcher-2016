@@ -5,6 +5,7 @@
 
 #include "point.h"
 
-void hsort(Point* &a, int n);
+void hsort(Point* a, int n);
+void dhsort(Point* a, int n);
 
 #endif
