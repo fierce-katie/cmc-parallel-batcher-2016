@@ -9,5 +9,7 @@ bsort: bsort.cpp $(OBJMODULES)
 	$(MPICXX) $(CXXFLAGS) $^ -o $@
 
 clean:
-	rm -f *.o bsort
+	rm -f *.o bsort qsort
 
+qsort: qsort.cpp $(OBJMODULES)
+	$(MPICXX) $(CXXFLAGS) $^ -o $@
