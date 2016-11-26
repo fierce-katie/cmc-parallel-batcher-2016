@@ -6,7 +6,8 @@ MPICXX = mpic++
 	$(MPICXX) $(CXXFLAGS) -c $< -o $@
 
 bsort: bsort.cpp $(OBJMODULES)
-	$(MPICXX) $(CXXFLAGS) $^ -o $@
+	$(MPICXX) $(CXXFLAGS) $^ -lpthread -o $@
 
 clean:
 	rm -f *.o bsort
+

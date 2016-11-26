@@ -112,3 +112,13 @@ int count_tacts(int n, std::vector<comparator> &cmp)
     return max;
 }
 
+void swap_ptr(void *ptr1_ptr, void *ptr2_ptr)
+{
+    void **ptr1 = (void **)ptr1_ptr;
+    void **ptr2 = (void **)ptr2_ptr;
+
+    void *tmp = *ptr1;
+    *ptr1 = *ptr2;
+    *ptr2 = tmp;
+}
+

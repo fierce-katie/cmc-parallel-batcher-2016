@@ -96,16 +96,6 @@ void make_comparators(int procs, std::vector<comparator> &cmp)
     return;
 }
 
-void swap_ptr(void *ptr1_ptr, void *ptr2_ptr)
-{
-    void **ptr1 = (void **)ptr1_ptr;
-    void **ptr2 = (void **)ptr2_ptr;
-
-    void *tmp = *ptr1;
-    *ptr1 = *ptr2;
-    *ptr2 = tmp;
-}
-
 int main(int argc, char **argv)
 {
     int nx, ny;
