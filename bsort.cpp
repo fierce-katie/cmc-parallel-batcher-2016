@@ -124,12 +124,11 @@ int main(int argc, char **argv)
     srand(time(NULL) + rank);
     Point *proc_points =
         init_points(n, ny, procs, proc_elems, rank);
-    print_points(proc_points, proc_elems, rank, "initial");
+    //print_points(proc_points, proc_elems, rank, "initial");
 
     // Sorting
-    dhsort(proc_points, proc_elems); //FIXME
-    print_points(proc_points, proc_elems, rank, "sorted");
-    return 0;
+    hsort(proc_points, proc_elems); //FIXME
+    //print_points(proc_points, proc_elems, rank, "sorted");
 
     // Exchanging elements
     Point *tmp_points = new Point[proc_elems];
@@ -182,7 +181,7 @@ int main(int argc, char **argv)
         }
     }
 
-    print_points(proc_points, proc_elems, rank, "result");
+    //print_points(proc_points, proc_elems, rank, "result");
 
     MPI_Finalize();
     return 0;

@@ -60,6 +60,16 @@ void *hsort(void *arg)
     return NULL;
 }
 
+void hsort(Point *a, int n)
+{
+    PthreadArgs *pthread_args = new PthreadArgs;
+    pthread_args->a = a;
+    pthread_args->n = n;
+    hsort(pthread_args);
+    return;
+}
+
+
 void hsort_threads(Point* a, int n, int nthreads)
 {
     PthreadArgs *pthread_args = new PthreadArgs[nthreads];
