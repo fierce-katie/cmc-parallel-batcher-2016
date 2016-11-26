@@ -105,6 +105,7 @@ int main(int argc, char **argv)
         return 1;
 
     MPI_Init(&argc, &argv);
+    double total_time = MPI_Wtime();
 
     int rank, procs;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -121,12 +122,15 @@ int main(int argc, char **argv)
     int proc_elems = elems / procs;
 
     // Initializing points
+    double init_time = MPI_Wtime();
     srand(time(NULL) + rank);
     Point *proc_points =
         init_points(n, ny, procs, proc_elems, rank);
     //print_points(proc_points, proc_elems, rank, "initial");
+    init_time = MPI_Wtime() - init_time;
 
     // Sorting
+    double sort_time = MPI_Wtime();
     hsort(proc_points, proc_elems); //FIXME
     //print_points(proc_points, proc_elems, rank, "sorted");
 
@@ -181,7 +185,13 @@ int main(int argc, char **argv)
         }
     }
 
+    sort_time = MPI_Wtime() - sort_time;
     //print_points(proc_points, proc_elems, rank, "result");
+    total_time = MPI_Wtime() - total_time;
+
+    if (!rank)
+        printf("Elems: %d\nProcs: %d\nTotal time: %f\nInit time: %f\nSort time: %f\n",
+                n, procs, total_time, init_time, sort_time);
 
     MPI_Finalize();
     return 0;
