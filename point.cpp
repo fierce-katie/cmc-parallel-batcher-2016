@@ -37,12 +37,14 @@ float y(int i, int j)
 
 int compare_points(const void *a, const void *b)
 {
-  //float ax = ((Point * const)a)->GetX();
-  //float bx = ((Point * const)b)->GetX();
-  if (*(Point * const)a < *(Point * const)b)
-      return -1;
-  else
+  Point *aptr = (Point * const)a;
+  Point *bptr = (Point * const)b;
+
+  if (*aptr == *bptr)
+      return 0;
+  else if (*aptr > *bptr)
       return 1;
+  return -1;
 }
 
 MPI_Datatype Point::getType()

@@ -7,7 +7,6 @@
 
 #include "tools.h"
 #include "point.h"
-#include "dhsort.h"
 
 void join(std::vector<int> idx_up, int n0, std::vector<int> idx_down, int n1,
           std::vector<comparator> &cmp)
@@ -122,17 +121,14 @@ int main(int argc, char **argv)
     int proc_elems = elems / procs;
 
     // Initializing points
-    double init_time = MPI_Wtime();
     srand(time(NULL) + rank);
     Point *proc_points =
         init_points(n, ny, procs, proc_elems, rank);
     //print_points(proc_points, proc_elems, rank, "initial");
-    init_time = MPI_Wtime() - init_time;
 
     // Sorting
     double sort_time = MPI_Wtime();
-    hsort(proc_points, proc_elems); //FIXME
-    //print_points(proc_points, proc_elems, rank, "sorted");
+    qsort(proc_points, proc_elems, sizeof(*proc_points), compare_points);
 
     // Exchanging elements
     Point *tmp_points = new Point[proc_elems];
@@ -186,12 +182,15 @@ int main(int argc, char **argv)
     }
 
     sort_time = MPI_Wtime() - sort_time;
-    //print_points(proc_points, proc_elems, rank, "result");
     total_time = MPI_Wtime() - total_time;
+    //print_points(proc_points, proc_elems, rank, "result");
 
-    if (!rank)
-        printf("Elems: %d\nProcs: %d\nTotal time: %f\nInit time: %f\nSort time: %f\n",
-                n, procs, total_time, init_time, sort_time);
+    if (!rank) {
+        printf("Elems: %d\nProcs: %d\n", n, procs);
+        printf("Total time:       %f sec.\n"
+               "Sort time:        %f sec.\n",
+               total_time, sort_time);
+    }
 
     MPI_Finalize();
     return 0;
