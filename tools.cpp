@@ -36,8 +36,8 @@ void print_points(Point* p, int n, int rank, const char *comment)
 {
     for (int i = 0; i < n; i++) {
         Point point = p[i];
-        if (point.GetIndex() >= 0)
-            printf("%d %d: %f %s\n", rank, point.GetIndex(), point.GetX(),
+        if (point.index >= 0)
+            printf("%d %d: %f %s\n", rank, point.index, point.coord[0],
                    comment);
     }
 }

@@ -1,6 +1,7 @@
 OBJMODULES = tools.o point.o
 CXXFLAGS = -g -Wall
 MPICXX = mpicxx
+MPIXLCXX = mpixlcxx_r
 
 %.o: %.cpp %.h
 	$(MPICXX) $(CXXFLAGS) -c $< -o $@

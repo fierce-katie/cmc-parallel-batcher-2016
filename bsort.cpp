@@ -104,7 +104,6 @@ int main(int argc, char **argv)
         return 1;
 
     MPI_Init(&argc, &argv);
-    double total_time = MPI_Wtime();
 
     int rank, procs;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -124,7 +123,7 @@ int main(int argc, char **argv)
     srand(time(NULL) + rank);
     Point *proc_points =
         init_points(n, ny, procs, proc_elems, rank);
-    //print_points(proc_points, proc_elems, rank, "initial");
+    print_points(proc_points, proc_elems, rank, "initial");
 
     // Sorting
     double sort_time = MPI_Wtime();
@@ -134,8 +133,7 @@ int main(int argc, char **argv)
     Point *tmp_points = new Point[proc_elems];
     Point *other_points = new Point[proc_elems];
     MPI_Status status;
-    Point p;
-    MPI_Datatype MPI_POINT = p.getType();
+    MPI_Datatype MPI_POINT = pointType();
     std::vector<comparator>::iterator it;
     for (it = cmp.begin(); it != cmp.end(); it++) {
         if (rank == it->first) {
@@ -148,7 +146,7 @@ int main(int argc, char **argv)
             for (int tmp_idx = 0; tmp_idx < proc_elems; tmp_idx++) {
                 Point my = proc_points[idx];
                 Point other = other_points[other_idx];
-                if (my < other) {
+                if (my.coord[0] < other.coord[0]) {
                     tmp_points[tmp_idx] = my;
                     idx++;
                 } else {
@@ -169,7 +167,7 @@ int main(int argc, char **argv)
             for (int tmp_idx = proc_elems - 1; tmp_idx >= 0; tmp_idx--) {
                 Point my = proc_points[idx];
                 Point other = other_points[other_idx];
-                if (my > other) {
+                if (my.coord[0] > other.coord[0]) {
                     tmp_points[tmp_idx] = my;
                     idx--;
                 } else {
@@ -182,14 +180,11 @@ int main(int argc, char **argv)
     }
 
     sort_time = MPI_Wtime() - sort_time;
-    total_time = MPI_Wtime() - total_time;
-    //print_points(proc_points, proc_elems, rank, "result");
+    print_points(proc_points, proc_elems, rank, "result");
 
     if (!rank) {
         printf("Elems: %d\nProcs: %d\n", n, procs);
-        printf("Total time:       %f sec.\n"
-               "Sort time:        %f sec.\n",
-               total_time, sort_time);
+        printf("Sort time: %f sec.\n", sort_time);
     }
 
     MPI_Finalize();

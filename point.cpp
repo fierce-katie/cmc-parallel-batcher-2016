@@ -20,7 +20,11 @@ Point* init_points(int n, int ny, int procs, int proc_elems, int rank)
         delta = not_fake*proc_elems + tmp*(rank - not_fake);
     for (int k = 0; k < real_elems; k++) {
         int i = (k + delta) / ny, j = (k + delta) % ny;
-        res[k] = Point(x(i, j), y(i, j), i*ny + j);
+        Point p;
+        p.coord[0] = x(i, j);
+        p.coord[1] = y(i, j);
+        p.index = i*ny + j;
+        res[k] = p;
     }
     return res;
 }
@@ -39,15 +43,17 @@ int compare_points(const void *a, const void *b)
 {
   Point *aptr = (Point * const)a;
   Point *bptr = (Point * const)b;
+  float ax = aptr->coord[0];
+  float bx = bptr->coord[0];
 
-  if (*aptr == *bptr)
+  if (ax == bx)
       return 0;
-  else if (*aptr > *bptr)
+  else if (ax > bx)
       return 1;
   return -1;
 }
 
-MPI_Datatype Point::getType()
+MPI_Datatype pointType()
 {
     MPI_Datatype point;
     MPI_Datatype types[2] = { MPI_FLOAT, MPI_INT };
