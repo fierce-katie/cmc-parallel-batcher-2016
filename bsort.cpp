@@ -187,6 +187,11 @@ int main(int argc, char **argv)
         printf("Sort time: %f sec.\n", sort_time);
     }
 
+    if (argc > 3) {
+        write_output(proc_points, proc_elems, argv[3], nx, ny, rank);
+    }
+
+    delete [] proc_points;
     MPI_Finalize();
     return 0;
 }
