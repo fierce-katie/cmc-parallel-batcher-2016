@@ -12,5 +12,3 @@ bsort: bsort.cpp $(OBJMODULES)
 clean:
 	rm -f *.o bsort qsort
 
-qsort: qsort.cpp $(OBJMODULES)
-	$(MPICXX) $(CXXFLAGS) $^ -o $@

@@ -123,7 +123,6 @@ int main(int argc, char **argv)
     srand(time(NULL) + rank);
     Point *proc_points =
         init_points(n, ny, procs, proc_elems, rank);
-    print_points(proc_points, proc_elems, rank, "initial");
 
     // Sorting
     double sort_time = MPI_Wtime();
@@ -180,7 +179,6 @@ int main(int argc, char **argv)
     }
 
     sort_time = MPI_Wtime() - sort_time;
-    print_points(proc_points, proc_elems, rank, "result");
 
     if (!rank) {
         printf("Elems: %d\nProcs: %d\n", n, procs);
