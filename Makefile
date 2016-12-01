@@ -10,10 +10,13 @@ bsort: bsort.cpp $(OBJMODULES)
 	$(MPICXX) $^ -o $@
 
 clean:
-	rm -f *.o bsort qsort hsort
+	rm -f *.o bsort qsort hsort dhsort
 
 qsort: qsort.cpp
 	$(CXX) $(CXXFLAGS) $^ -o $@
 
 hsort: hsort.cpp
 	$(CXX) $(CXXFLAGS) $^ -o $@
+
+dhsort: dhsort.cpp
+	$(CXX) $(CXXFLAGS) $^ -lpthread -o $@
