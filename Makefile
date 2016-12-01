@@ -7,8 +7,10 @@ MPIXLCXX = mpixlcxx_r
 	$(MPICXX) $(CXXFLAGS) -c $< -o $@
 
 bsort: bsort.cpp $(OBJMODULES)
-	$(MPICXX) $(CXXFLAGS) $^ -o $@
+	$(MPICXX) $^ -o $@
 
 clean:
 	rm -f *.o bsort qsort
 
+qsort: qsort.cpp
+	$(CXX) $(CXXFLAGS) $^ -o $@

@@ -2,4 +2,8 @@
 *.toc
 *.log
 *.aux
+*.pdf
+*.png
+*.ods
+*.bak
 habr/
