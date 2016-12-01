@@ -31,6 +31,45 @@ int compare_points(const void *a, const void *b)
   return -1;
 }
 
+void heapify(Point* a, int i, int n)
+{
+    int imax, l, r;
+    Point tmp;
+    while (i < n) {
+        imax = i;
+        l = 2*i + 1;
+        r = l + 1;
+        if (l < n && (compare_points(&a[l], &a[imax]) > 0))
+            imax = l;
+        if (r < n && (compare_points(&a[r], &a[imax]) > 0))
+            imax = r;
+        if (imax == i)
+            return;
+        tmp = a[i];
+        a[i] = a[imax];
+        a[imax] = tmp;
+        i = imax;
+    }
+}
+
+void make_heap(Point* a, int n)
+{
+    for (int i = n/2 - 1; i >= 0; i--)
+        heapify(a, i, n);
+}
+
+void hsort(Point *a, int n)
+{
+    make_heap(a, n);
+    Point tmp;
+    for (int i = n - 1; i > 0; i--) {
+        tmp = a[0];
+        a[0] = a[i];
+        a[i] = tmp;
+        heapify(a, 0 ,i);
+    }
+}
+
 bool check_args(int argc, char **argv, int &nx, int &ny)
 {
     if (argc < 3) {
@@ -79,7 +118,7 @@ int main(int argc, char **argv)
 
     // Sorting
     clock_t sort_time = clock();
-    qsort(points, n, sizeof(*points), compare_points);
+    hsort(points, n);
     sort_time = clock() - sort_time;
 
 #if 0
@@ -87,7 +126,7 @@ int main(int argc, char **argv)
         printf("%f\n", points[i].coord[0]);
 #endif
 
-    printf("Sort time (qsort, %d x %d): %lf\n", nx , ny,
+    printf("Sort time (hsort, %d x %d): %lf\n", nx , ny,
             (double)sort_time/CLOCKS_PER_SEC);
 
     delete [] points;

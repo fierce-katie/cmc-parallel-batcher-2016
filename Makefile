@@ -10,7 +10,10 @@ bsort: bsort.cpp $(OBJMODULES)
 	$(MPICXX) $^ -o $@
 
 clean:
-	rm -f *.o bsort qsort
+	rm -f *.o bsort qsort hsort
 
 qsort: qsort.cpp
+	$(CXX) $(CXXFLAGS) $^ -o $@
+
+hsort: hsort.cpp
 	$(CXX) $(CXXFLAGS) $^ -o $@
