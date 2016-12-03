@@ -1,5 +1,5 @@
 OBJMODULES = tools.o point.o
-CXXFLAGS = -g -Wall
+CXXFLAGS = -g -Wall -O3
 MPICXX = mpicxx
 MPIXLCXX = mpixlcxx_r
 SEQ = qsort dsort hsort dhsort
@@ -8,7 +8,7 @@ SEQ = qsort dsort hsort dhsort
 	$(MPICXX) $(CXXFLAGS) -c $< -o $@
 
 bsort: bsort.cpp $(OBJMODULES)
-	$(MPICXX) $^ -o $@
+	$(MPICXX) $^ -lpthread  -o $@
 
 clean:
 	rm -f *.o bsort $(SEQ)
@@ -20,7 +20,7 @@ hsort: hsort.cpp
 	$(CXX) $(CXXFLAGS) $^ -o $@
 
 dhsort: dhsort.cpp
-	$(CXX) $(CXXFLAGS) $^ -lpthread -o $@
+	$(CXX) $(CXXFLAGS) $^ -o $@
 
 dsort: dsort.cpp
 	$(CXX) $(CXXFLAGS) $^ -o $@

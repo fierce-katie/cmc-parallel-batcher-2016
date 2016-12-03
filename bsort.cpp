@@ -5,9 +5,142 @@
 #include <mpi.h>
 #include <time.h>
 #include <string.h>
+#include <cmath>
+#include <pthread.h>
 
 #include "tools.h"
 #include "point.h"
+
+#define MIN_THREADS_NUM 2
+#define MAX_HSORT_ELEMS 100000
+
+struct PthreadArgs {
+    pthread_t tid;
+    Point *a;
+    int n;
+};
+
+void heapify(Point* a, int i, int n)
+{
+    int imax, l, r;
+    Point tmp;
+    while (i < n) {
+        imax = i;
+        l = 2*i + 1;
+        r = l + 1;
+        if (l < n && (compare_points(&a[l], &a[imax]) > 0))
+            imax = l;
+        if (r < n && (compare_points(&a[r], &a[imax]) > 0))
+            imax = r;
+        if (imax == i)
+            return;
+        tmp = a[i];
+        a[i] = a[imax];
+        a[imax] = tmp;
+        i = imax;
+    }
+}
+
+void make_heap(Point* a, int n)
+{
+    for (int i = n/2 - 1; i >= 0; i--)
+        heapify(a, i, n);
+}
+
+void hsort(Point *a, int n)
+{
+    make_heap(a, n);
+    Point tmp;
+    for (int i = n - 1; i > 0; i--) {
+        tmp = a[0];
+        a[0] = a[i];
+        a[i] = tmp;
+        heapify(a, 0 ,i);
+    }
+}
+
+void* hsort_start(void *arg)
+{
+    PthreadArgs *args = (PthreadArgs*)arg;
+    hsort(args->a, args->n);
+    return NULL;
+}
+
+
+void hsort_threads(Point* a, int n, int nthreads)
+{
+    PthreadArgs *pthread_args = new PthreadArgs[nthreads];
+    int tmp = ceil(n / (double)nthreads);
+    int elems;
+    int offset = 0;
+    for (int th = 0; th < nthreads; th++) {
+        if (n - offset >= tmp)
+            elems = tmp;
+        else
+            elems = (n - offset > 0) ? n - offset : 0;
+
+        pthread_args[th].a = a + offset;
+        pthread_args[th].n = elems;
+        pthread_create(&pthread_args[th].tid, NULL, hsort_start,
+                       &pthread_args[th]);
+        offset += elems;
+    }
+    for (int th = 0; th < nthreads; th++)
+        pthread_join(pthread_args[th].tid, NULL);
+    delete [] pthread_args;
+}
+
+void dsort (Point *array, int n, int sorted)
+{
+    Point *a = array;
+    Point *b = new Point[n];
+    Point *c;
+
+    for (int i = sorted; i < n ; i *= 2) {
+        for (int j = 0; j < n; j = j + 2*i) {
+            int r = j + i;
+
+            int n1 = (i < n - j) ? i : n - j;
+            int n2 = (i < n - r) ? i : n - r;
+            n1 = (n1 < 0) ? 0 : n1;
+            n2 = (n2 < 0) ? 0 : n2;
+
+            for (int ia = 0, ib = 0, k = 0; k < n1 + n2; k++) {
+                if (ia >= n1)
+                    b[j+k] = a[r+ib++];
+                else if (ib >= n2)
+                    b[j+k]=a[j+ia++];
+                else if (compare_points(&a[j+ia], &a[r+ib]) < 0)
+                    b[j+k]=a[j+ia++];
+                else
+                    b[j+k]=a[r+ib++];
+            }
+        }
+        c = a;
+        a = b;
+        b = c;
+    }
+
+    c = a;
+    a = b;
+    b = c;
+    if (b != array) {
+        memcpy(array, b, n*sizeof(*array));
+        delete [] b;
+    } else {
+        delete [] a;
+    }
+}
+
+void dhsort(Point *a, int n)
+{
+    int nthreads = ceil(n / (double)MAX_HSORT_ELEMS);
+    nthreads = nthreads > MIN_THREADS_NUM ? nthreads : MIN_THREADS_NUM;
+    hsort_threads(a, n, nthreads);
+    dsort(a, n, ceil(n / (double)nthreads));
+
+    return;
+}
 
 void join(std::vector<int> idx_up, int n0, std::vector<int> idx_down, int n1,
           std::vector<comparator> &cmp)
@@ -96,48 +229,6 @@ void make_comparators(int procs, std::vector<comparator> &cmp)
     return;
 }
 
-void dsort(Point *array, int n)
-{
-    Point *a = array;
-    Point *b = new Point[n];
-    Point *c;
-
-    for (int i = 1; i < n ; i *= 2) {
-        for (int j = 0; j < n; j = j + 2*i) {
-            int r = j + i;
-
-            int n1 = (i < n - j) ? i : n - j;
-            int n2 = (i < n - r) ? i : n - r;
-            n1 = (n1 < 0) ? 0 : n1;
-            n2 = (n2 < 0) ? 0 : n2;
-
-            for (int ia = 0, ib = 0, k = 0; k < n1 + n2; k++) {
-                if (ia >= n1)
-                    b[j+k] = a[r+ib++];
-                else if (ib >= n2)
-                    b[j+k]=a[j+ia++];
-                else if (compare_points(&a[j+ia], &a[r+ib]) < 0)
-                    b[j+k]=a[j+ia++];
-                else
-                    b[j+k]=a[r+ib++];
-            }
-        }
-        c = a;
-        a = b;
-        b = c;
-    }
-
-    c = a;
-    a = b;
-    b = c;
-    if (b != array) {
-        memcpy(array, b, n*sizeof(*array));
-        delete [] b;
-    } else {
-        delete [] a;
-    }
-}
-
 int main(int argc, char **argv)
 {
     int nx, ny;
@@ -168,9 +259,9 @@ int main(int argc, char **argv)
         init_points(n, ny, procs, proc_elems, rank);
 
     // Sorting
+    MPI_Barrier(MPI_COMM_WORLD);
     double sort_time = MPI_Wtime();
-    //qsort(proc_points, proc_elems, sizeof(*proc_points), compare_points);
-    dsort(proc_points, proc_elems);
+    dhsort(proc_points, proc_elems);
 
     // Exchanging elements
     Point *tmp_points = new Point[proc_elems];
@@ -222,6 +313,7 @@ int main(int argc, char **argv)
         }
     }
 
+    MPI_Barrier(MPI_COMM_WORLD);
     sort_time = MPI_Wtime() - sort_time;
 
     if (!rank) {

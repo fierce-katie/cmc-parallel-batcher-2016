@@ -2,11 +2,9 @@
 #include <stdlib.h>
 #include <time.h>
 #include <cmath>
-#include <pthread.h>
 #include <string.h>
 
-#define MIN_THREADS_NUM 2
-#define MAX_HSORT_ELEMS 100000
+#define N 4
 
 struct Point {
     float coord[2];
@@ -36,12 +34,6 @@ int compare_points(const void *a, const void *b)
       return 1;
   return -1;
 }
-
-struct PthreadArgs {
-    pthread_t tid;
-    Point *a;
-    int n;
-};
 
 void heapify(Point* a, int i, int n)
 {
@@ -80,37 +72,6 @@ void hsort(Point *a, int n)
         a[i] = tmp;
         heapify(a, 0 ,i);
     }
-}
-
-void* hsort_start(void *arg)
-{
-    PthreadArgs *args = (PthreadArgs*)arg;
-    hsort(args->a, args->n);
-    return NULL;
-}
-
-
-void hsort_threads(Point* a, int n, int nthreads)
-{
-    PthreadArgs *pthread_args = new PthreadArgs[nthreads];
-    int tmp = ceil(n / (double)nthreads);
-    int elems;
-    int offset = 0;
-    for (int th = 0; th < nthreads; th++) {
-        if (n - offset >= tmp)
-            elems = tmp;
-        else
-            elems = (n - offset > 0) ? n - offset : 0;
-
-        pthread_args[th].a = a + offset;
-        pthread_args[th].n = elems;
-        pthread_create(&pthread_args[th].tid, NULL, hsort_start,
-                       &pthread_args[th]);
-        offset += elems;
-    }
-    for (int th = 0; th < nthreads; th++)
-        pthread_join(pthread_args[th].tid, NULL);
-    delete [] pthread_args;
 }
 
 void dsort (Point *array, int n, int sorted)
@@ -157,11 +118,18 @@ void dsort (Point *array, int n, int sorted)
 
 void dhsort(Point *a, int n)
 {
-    int nthreads = ceil(n / (double)MAX_HSORT_ELEMS);
-    nthreads = nthreads > MIN_THREADS_NUM ? nthreads : MIN_THREADS_NUM;
-    hsort_threads(a, n, nthreads);
-    dsort(a, n, ceil(n / (double)nthreads));
-
+    int tmp = ceil(n / (double)N);
+    int elems;
+    int offset = 0;
+    for (int th = 0; th < N; th++) {
+        if (n - offset >= tmp)
+            elems = tmp;
+        else
+            elems = (n - offset > 0) ? n - offset : 0;
+        hsort(a + offset, elems);
+        offset += elems;
+    }
+    dsort(a, n, ceil(n / (double)N));
     return;
 }
 
@@ -216,14 +184,12 @@ int main(int argc, char **argv)
     dhsort(points, n);
     sort_time = clock() - sort_time;
 
-#if 0
+#if 1
     for (int i = 0; i < n; i++)
         printf("%f\n", points[i].coord[0]);
 #endif
 
-    int nthreads = ceil(n / (double)MAX_HSORT_ELEMS);
-    nthreads = nthreads > MIN_THREADS_NUM ? nthreads : MIN_THREADS_NUM;
-    printf("Sort time (dhsort, %d x %d, %d): %lf\n", nx, ny, nthreads,
+    printf("Sort time (dhsort, %d x %d): %lf\n", nx, ny,
             (double)sort_time/CLOCKS_PER_SEC);
 
     delete [] points;
