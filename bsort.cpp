@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <mpi.h>
 #include <time.h>
+#include <string.h>
 
 #include "tools.h"
 #include "point.h"
@@ -95,6 +96,48 @@ void make_comparators(int procs, std::vector<comparator> &cmp)
     return;
 }
 
+void dsort(Point *array, int n)
+{
+    Point *a = array;
+    Point *b = new Point[n];
+    Point *c;
+
+    for (int i = 1; i < n ; i *= 2) {
+        for (int j = 0; j < n; j = j + 2*i) {
+            int r = j + i;
+
+            int n1 = (i < n - j) ? i : n - j;
+            int n2 = (i < n - r) ? i : n - r;
+            n1 = (n1 < 0) ? 0 : n1;
+            n2 = (n2 < 0) ? 0 : n2;
+
+            for (int ia = 0, ib = 0, k = 0; k < n1 + n2; k++) {
+                if (ia >= n1)
+                    b[j+k] = a[r+ib++];
+                else if (ib >= n2)
+                    b[j+k]=a[j+ia++];
+                else if (compare_points(&a[j+ia], &a[r+ib]) < 0)
+                    b[j+k]=a[j+ia++];
+                else
+                    b[j+k]=a[r+ib++];
+            }
+        }
+        c = a;
+        a = b;
+        b = c;
+    }
+
+    c = a;
+    a = b;
+    b = c;
+    if (b != array) {
+        memcpy(array, b, n*sizeof(*array));
+        delete [] b;
+    } else {
+        delete [] a;
+    }
+}
+
 int main(int argc, char **argv)
 {
     int nx, ny;
@@ -126,7 +169,8 @@ int main(int argc, char **argv)
 
     // Sorting
     double sort_time = MPI_Wtime();
-    qsort(proc_points, proc_elems, sizeof(*proc_points), compare_points);
+    //qsort(proc_points, proc_elems, sizeof(*proc_points), compare_points);
+    dsort(proc_points, proc_elems);
 
     // Exchanging elements
     Point *tmp_points = new Point[proc_elems];
