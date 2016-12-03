@@ -4,7 +4,8 @@
 #include <cmath>
 #include <string.h>
 
-#define N 4
+#define MIN_THREADS_NUM 4
+#define MAX_HSORT_ELEMS 1000
 
 struct Point {
     float coord[2];
@@ -118,10 +119,12 @@ void dsort (Point *array, int n, int sorted)
 
 void dhsort(Point *a, int n)
 {
-    int tmp = ceil(n / (double)N);
+    int nthreads = ceil(n / (double)MAX_HSORT_ELEMS);
+    nthreads = nthreads > MIN_THREADS_NUM ? nthreads : MIN_THREADS_NUM;
+    int tmp = ceil(n / (double)nthreads);
     int elems;
     int offset = 0;
-    for (int th = 0; th < N; th++) {
+    for (int th = 0; th < nthreads; th++) {
         if (n - offset >= tmp)
             elems = tmp;
         else
@@ -129,7 +132,7 @@ void dhsort(Point *a, int n)
         hsort(a + offset, elems);
         offset += elems;
     }
-    dsort(a, n, ceil(n / (double)N));
+    dsort(a, n, ceil(n / (double)nthreads));
     return;
 }
 
@@ -189,7 +192,9 @@ int main(int argc, char **argv)
         printf("%f\n", points[i].coord[0]);
 #endif
 
-    printf("Sort time (dhsort, %d x %d): %lf\n", nx, ny,
+    int nthreads = ceil(n / (double)MAX_HSORT_ELEMS);
+    nthreads = nthreads > MIN_THREADS_NUM ? nthreads : MIN_THREADS_NUM;
+    printf("Sort time (dhsort, %d x %d, %d): %lf\n", nx, ny, nthreads,
             (double)sort_time/CLOCKS_PER_SEC);
 
     delete [] points;
