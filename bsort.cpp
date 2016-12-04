@@ -11,7 +11,7 @@
 #include "tools.h"
 #include "point.h"
 
-#define MIN_THREADS_NUM 2
+#define MIN_THREADS_NUM 4
 #define MAX_HSORT_ELEMS 100000
 
 struct PthreadArgs {
@@ -259,8 +259,7 @@ int main(int argc, char **argv)
         init_points(n, ny, procs, proc_elems, rank);
 
     // Sorting
-    MPI_Barrier(MPI_COMM_WORLD);
-    double sort_time = MPI_Wtime();
+    double start_time = MPI_Wtime();
     dhsort(proc_points, proc_elems);
 
     // Exchanging elements
@@ -313,8 +312,10 @@ int main(int argc, char **argv)
         }
     }
 
-    MPI_Barrier(MPI_COMM_WORLD);
-    sort_time = MPI_Wtime() - sort_time;
+    double end_time = MPI_Wtime();
+    double time = end_time - start_time;
+    double sort_time = 0;
+    MPI_Reduce(&time, &sort_time, 1, MPI_FLOAT, MPI_MAX, 0, MPI_COMM_WORLD);
 
     if (!rank) {
         printf("Elems: %d\nProcs: %d\n", n, procs);
