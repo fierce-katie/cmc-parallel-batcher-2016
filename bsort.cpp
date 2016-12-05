@@ -268,12 +268,17 @@ int main(int argc, char **argv)
     MPI_Status status;
     MPI_Datatype MPI_POINT = pointType();
     std::vector<comparator>::iterator it;
+    double send_time = 0, recv_time = 0, exchange_time = 0, my_max_time = 0;
     for (it = cmp.begin(); it != cmp.end(); it++) {
         if (rank == it->first) {
+            send_time = MPI_Wtime();
             MPI_Send(proc_points, proc_elems, MPI_POINT,
                      it->second, 0, MPI_COMM_WORLD);
+            recv_time = MPI_Wtime();
+            send_time = recv_time - send_time;
             MPI_Recv(other_points, proc_elems, MPI_POINT,
                      it->second, 0, MPI_COMM_WORLD, &status);
+            recv_time = MPI_Wtime() - recv_time;
             int idx = 0;
             int other_idx = 0;
             for (int tmp_idx = 0; tmp_idx < proc_elems; tmp_idx++) {
@@ -291,10 +296,14 @@ int main(int argc, char **argv)
         }
 
         if (rank == it->second) {
+            recv_time = MPI_Wtime();
             MPI_Recv(other_points, proc_elems, MPI_POINT,
                      it->first, 0, MPI_COMM_WORLD, &status);
+            send_time = MPI_Wtime();
+            recv_time = send_time - recv_time;
             MPI_Send(proc_points, proc_elems, MPI_POINT,
                      it->first, 0, MPI_COMM_WORLD);
+            send_time = MPI_Wtime() - send_time;
             int idx = proc_elems - 1;
             int other_idx = proc_elems - 1;
             for (int tmp_idx = proc_elems - 1; tmp_idx >= 0; tmp_idx--) {
@@ -310,16 +319,20 @@ int main(int argc, char **argv)
             }
             swap_ptr(&proc_points, &tmp_points);
         }
+        exchange_time = send_time > recv_time ? send_time : recv_time;
+        my_max_time = exchange_time > my_max_time ? exchange_time : my_max_time;
     }
-
     double end_time = MPI_Wtime();
     double time = end_time - start_time;
     double sort_time = 0;
+    double max_exchange_time = 0;
     MPI_Reduce(&time, &sort_time, 1, MPI_FLOAT, MPI_MAX, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&my_max_time, &max_exchange_time, 1, MPI_FLOAT, MPI_MAX, 0, MPI_COMM_WORLD);
 
     if (!rank) {
         printf("Elems: %d\nProcs: %d\n", n, procs);
         printf("Sort time: %f sec.\n", sort_time);
+        printf("Exchange time: %f sec.\n", exchange_time);
     }
 
     if (argc > 3) {
