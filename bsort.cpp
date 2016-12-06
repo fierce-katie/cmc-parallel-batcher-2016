@@ -200,7 +200,7 @@ struct PthreadArgs {
     int n;
 };
 
-void heapify(Point* a, int i, int n)
+void heapify(Point *a, int i, int n)
 {
     int imax, l, r;
     Point tmp;
@@ -221,7 +221,7 @@ void heapify(Point* a, int i, int n)
     }
 }
 
-void make_heap(Point* a, int n)
+void make_heap(Point *a, int n)
 {
     for (int i = n/2 - 1; i >= 0; i--)
         heapify(a, i, n);
@@ -247,7 +247,7 @@ void* hsort_start(void *arg)
 }
 
 
-void hsort_threads(Point* a, int n, int nthreads)
+void hsort_threads(Point *a, int n, int nthreads)
 {
     PthreadArgs *pthread_args = new PthreadArgs[nthreads];
     int tmp = ceil(n / (double)nthreads);

@@ -1,3 +1,5 @@
+// Catherine Galkina, group 524, year 2016
+// File dsort.cpp
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>

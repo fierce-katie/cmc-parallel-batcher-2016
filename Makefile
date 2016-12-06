@@ -1,6 +1,5 @@
-CXXFLAGS = -g -Wall -O3 -fomit-frame-pointer -fno-zero-initialized-in-bss -funsafe-loop-optimizations -ffast-math -funroll-all-loops
+CXXFLAGS = -g -Wall -O3
 MPICXX = mpicxx
-MPIXLCXX = mpixlcxx_r
 SEQ = qsort dsort hsort dhsort
 
 bsort: bsort.cpp

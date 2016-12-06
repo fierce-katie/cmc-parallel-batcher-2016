@@ -1,3 +1,5 @@
+// Catherine Galkina, group 524, year 2016
+// File dhsort.cpp
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -36,7 +38,7 @@ int compare_points(const void *a, const void *b)
   return -1;
 }
 
-void heapify(Point* a, int i, int n)
+void heapify(Point *a, int i, int n)
 {
     int imax, l, r;
     Point tmp;
@@ -57,7 +59,7 @@ void heapify(Point* a, int i, int n)
     }
 }
 
-void make_heap(Point* a, int n)
+void make_heap(Point *a, int n)
 {
     for (int i = n/2 - 1; i >= 0; i--)
         heapify(a, i, n);
