@@ -6,13 +6,193 @@
 #include <time.h>
 #include <string.h>
 #include <cmath>
+#include <vector>
 #include <pthread.h>
+#include <cstddef>
 
-#include "tools.h"
-#include "point.h"
 
 #define MIN_THREADS_NUM 4
 #define MAX_HSORT_ELEMS 100000
+
+struct Point {
+    float coord[2];
+    int index;
+};
+
+float x(int i, int j)
+{
+    return (float)rand()/(float)(RAND_MAX/(i*j+1));
+}
+
+float y(int i, int j)
+{
+    return (float)rand()/(float)(RAND_MAX/(i*j+1));
+}
+
+Point* init_points(int n, int ny, int procs, int proc_elems, int rank)
+{
+    Point *res = new Point[proc_elems];
+    int tmp = n/procs;
+    int not_fake = n % procs;
+    int real_elems = rank < not_fake ? tmp + 1 : tmp;
+    int delta;
+    if (rank < not_fake)
+        delta = rank*proc_elems;
+    else
+        delta = not_fake*proc_elems + tmp*(rank - not_fake);
+    for (int k = 0; k < real_elems; k++) {
+        int i = (k + delta) / ny, j = (k + delta) % ny;
+        Point p;
+        p.coord[0] = x(i, j);
+        p.coord[1] = y(i, j);
+        p.index = i*ny + j;
+        res[k] = p;
+    }
+    return res;
+}
+
+MPI_Datatype pointType()
+{
+    MPI_Datatype point;
+    MPI_Datatype types[2] = { MPI_FLOAT, MPI_INT };
+    int blocks[2] = { 2, 1 };
+    MPI_Aint disps[2] = { offsetof(Point, coord), offsetof(Point, index) };
+    MPI_Type_create_struct(2, blocks, disps, types, &point);
+    MPI_Type_commit(&point);
+    return point;
+}
+
+typedef std::pair<int, int> comparator;
+
+void swap(comparator cmp, std::vector<int> &v)
+{
+    int fst = cmp.first;
+    int snd = cmp.second;
+    if (v[fst] > v[snd]) {
+        int tmp = v[fst];
+        v[fst] = v[snd];
+        v[snd] = tmp;
+    }
+}
+
+void print_vector(std::vector<int> &v, int n)
+{
+    for (int i = 0; i < n; i++)
+        printf("%d ", v[i]);
+    putchar('\n');
+}
+
+void print_comparators(std::vector<comparator> &cmp)
+{
+    std::vector<comparator>::iterator it;
+    for (it = cmp.begin(); it != cmp.end(); it++)
+        printf("%d %d\n", it->first, it->second);
+    printf("%lu\n", cmp.size());
+}
+
+void print_points(Point* p, int n, int rank, const char *comment)
+{
+    for (int i = 0; i < n; i++) {
+        Point point = p[i];
+        if (point.index >= 0)
+            printf("%d %d: %f %s\n", rank, point.index, point.coord[0],
+                   comment);
+    }
+}
+
+bool check_args(int argc, char **argv, int &nx, int &ny)
+{
+    if (argc < 3) {
+        printf("Wrong arguments. Usage: bsort nx ny\n");
+        return false;
+    }
+    int check = sscanf(argv[1], "%d", &nx);
+    if (!check) {
+        printf("nx must be int: %s\n", argv[1]);
+        return false;
+    }
+    check = sscanf(argv[2], "%d", &ny);
+    if (!check) {
+        printf("ny must be int: %s\n", argv[2]);
+        return false;
+    }
+    if (!((nx >= 1) && (ny >= 1))) {
+        printf("Wrong n1 or n2\n");
+        return false;
+    }
+    return true;
+}
+
+int count_tacts(int n, std::vector<comparator> &cmp)
+{
+    std::vector<int> v(n);
+    std::vector<comparator>::iterator it;
+    int max;
+    for (it = cmp.begin(); it != cmp.end(); it++) {
+        int fst = it->first;
+        int snd = it->second;
+        max = v[fst] > v[snd] ? v[fst] : v[snd];
+        v[fst] = max + 1;
+        v[snd] = max + 1;
+    }
+    max = 0;
+    for (int i = 0; i < n; i++)
+        if (v[i] > max)
+            max = v[i];
+    return max;
+}
+
+void swap_ptr(void *ptr1_ptr, void *ptr2_ptr)
+{
+    void **ptr1 = (void **)ptr1_ptr;
+    void **ptr2 = (void **)ptr2_ptr;
+
+    void *tmp = *ptr1;
+    *ptr1 = *ptr2;
+    *ptr2 = tmp;
+}
+
+void write_output(Point *a, int n, char *file, int nx, int ny, int rank)
+{
+    float *a_out = new float[n];
+    int out_cnt = 0;
+    for (int i = 0; i < n; i++) {
+        if (a[i].index != -1)
+            a_out[out_cnt++] = a[i].coord[0];
+    }
+
+    MPI_Status status;
+    MPI_File output;
+    int res = MPI_File_open(MPI_COMM_WORLD, file,
+                            MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL,
+                            &output);
+    if (res != MPI_SUCCESS) {
+        if (rank == 0) {
+            printf("Cannot open %s\n", file);
+        }
+        MPI_Finalize();
+        exit(1);
+    }
+    MPI_File_set_size(output, 0);
+    MPI_File_write_ordered(output, a_out, out_cnt, MPI_FLOAT, &status);
+    MPI_File_close(&output);
+    delete [] a_out;
+
+    return;
+}
+inline int compare_points(const void *a, const void *b)
+{
+  Point *aptr = (Point * const)a;
+  Point *bptr = (Point * const)b;
+  float ax = aptr->coord[0];
+  float bx = bptr->coord[0];
+
+  if (ax == bx)
+      return 0;
+  else if (ax > bx)
+      return 1;
+  return -1;
+}
 
 struct PthreadArgs {
     pthread_t tid;
@@ -268,17 +448,12 @@ int main(int argc, char **argv)
     MPI_Status status;
     MPI_Datatype MPI_POINT = pointType();
     std::vector<comparator>::iterator it;
-    double send_time = 0, recv_time = 0, exchange_time = 0, my_max_time = 0;
     for (it = cmp.begin(); it != cmp.end(); it++) {
         if (rank == it->first) {
-            send_time = MPI_Wtime();
             MPI_Send(proc_points, proc_elems, MPI_POINT,
                      it->second, 0, MPI_COMM_WORLD);
-            recv_time = MPI_Wtime();
-            send_time = recv_time - send_time;
             MPI_Recv(other_points, proc_elems, MPI_POINT,
                      it->second, 0, MPI_COMM_WORLD, &status);
-            recv_time = MPI_Wtime() - recv_time;
             int idx = 0;
             int other_idx = 0;
             for (int tmp_idx = 0; tmp_idx < proc_elems; tmp_idx++) {
@@ -296,14 +471,10 @@ int main(int argc, char **argv)
         }
 
         if (rank == it->second) {
-            recv_time = MPI_Wtime();
             MPI_Recv(other_points, proc_elems, MPI_POINT,
                      it->first, 0, MPI_COMM_WORLD, &status);
-            send_time = MPI_Wtime();
-            recv_time = send_time - recv_time;
             MPI_Send(proc_points, proc_elems, MPI_POINT,
                      it->first, 0, MPI_COMM_WORLD);
-            send_time = MPI_Wtime() - send_time;
             int idx = proc_elems - 1;
             int other_idx = proc_elems - 1;
             for (int tmp_idx = proc_elems - 1; tmp_idx >= 0; tmp_idx--) {
@@ -319,20 +490,15 @@ int main(int argc, char **argv)
             }
             swap_ptr(&proc_points, &tmp_points);
         }
-        exchange_time = send_time > recv_time ? send_time : recv_time;
-        my_max_time = exchange_time > my_max_time ? exchange_time : my_max_time;
     }
     double end_time = MPI_Wtime();
     double time = end_time - start_time;
     double sort_time = 0;
-    double max_exchange_time = 0;
     MPI_Reduce(&time, &sort_time, 1, MPI_FLOAT, MPI_MAX, 0, MPI_COMM_WORLD);
-    MPI_Reduce(&my_max_time, &max_exchange_time, 1, MPI_FLOAT, MPI_MAX, 0, MPI_COMM_WORLD);
 
     if (!rank) {
         printf("Elems: %d\nProcs: %d\n", n, procs);
         printf("Sort time: %f sec.\n", sort_time);
-        printf("Exchange time: %f sec.\n", exchange_time);
     }
 
     if (argc > 3) {
