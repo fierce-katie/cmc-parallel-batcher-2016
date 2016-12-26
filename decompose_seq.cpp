@@ -17,12 +17,12 @@ struct Point {
 
 float x(int i, int j)
 {
-    return (float)rand()/(float)(RAND_MAX/(i*j+1));
+    return 100*(float)rand()/(float)(RAND_MAX/(i*j+1));
 }
 
 float y(int i, int j)
 {
-    return (float)rand()/(float)(RAND_MAX/(i*j+1));
+    return 100*(float)rand()/(float)(RAND_MAX/(i*j+1));
 }
 
 bool check_args(int argc, char **argv, int &nx, int &ny, int &k)
@@ -143,6 +143,36 @@ void print_domains(Point *points, int nx, int ny)
   }
 }
 
+void decompose(Point *points, int n0, int n, int dom0, int k)
+{
+  // One point
+  if (n == 1) {
+    points[n0].domain = dom0;
+    return;
+  }
+
+  // One domain
+  if (k == 1) {
+    for (int i = 0; i < n; i++)
+      points[n0 + i].domain = dom0;
+    return;
+  }
+
+  // Sort and change axis
+  dsort(points + n0, n, 1);
+  axis = !axis;
+
+  // Split
+  int k1 = (k + 1) / 2;
+  int k2 = k - k1;
+  int n1 = n*k1/(double)k;
+  int n2 = n - n1;
+
+  // Recursively decompose parts
+  decompose(points, n0, n1, dom0, k1);
+  decompose(points, n0 + n1, n2, dom0 + k1, k2);
+}
+
 int main(int argc, char **argv)
 {
   int nx, ny, k;
@@ -156,8 +186,9 @@ int main(int argc, char **argv)
   Point *points = init_points(n, ny, 1, n, 0);
 
   clock_t decompose_time = clock();
-
+  decompose(points, 0, n, 0, k);
   decompose_time = clock() - decompose_time;
+
   printf("Decomposition time: %lf\n", (double)decompose_time/CLOCKS_PER_SEC);
   print_domains(points, nx, ny);
 
