@@ -1,8 +1,0 @@
-#!/bin/sh
-
-mpisubmit.bg --stdout bsort"$1"k8p.out   -n 8   -w 00:01:00 ./bsort -- "$1"000 "$1"000
-mpisubmit.bg --stdout bsort"$1"k16p.out  -n 16  -w 00:01:00 ./bsort -- "$1"000 "$1"000
-mpisubmit.bg --stdout bsort"$1"k32p.out  -n 32  -w 00:02:00 ./bsort -- "$1"000 "$1"000
-mpisubmit.bg --stdout bsort"$1"k64p.out  -n 64  -w 00:04:00 ./bsort -- "$1"000 "$1"000
-mpisubmit.bg --stdout bsort"$1"k128p.out -n 128 -w 00:05:00 ./bsort -- "$1"000 "$1"000
-mpisubmit.bg --stdout bsort"$1"k256p.out -n 256 -w 00:08:00 ./bsort -- "$1"000 "$1"000
