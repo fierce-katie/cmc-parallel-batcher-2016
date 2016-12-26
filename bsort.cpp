@@ -10,9 +10,10 @@
 #include <pthread.h>
 #include <cstddef>
 
-
 #define MIN_THREADS_NUM 4
 #define MAX_HSORT_ELEMS 100000
+
+bool axis = true;
 
 struct Point {
     float coord[2];
@@ -152,40 +153,13 @@ void swap_ptr(void *ptr1_ptr, void *ptr2_ptr)
     *ptr2 = tmp;
 }
 
-void write_output(Point *a, int n, char *file, int nx, int ny, int rank)
-{
-    float *a_out = new float[n];
-    int out_cnt = 0;
-    for (int i = 0; i < n; i++) {
-        if (a[i].index != -1)
-            a_out[out_cnt++] = a[i].coord[0];
-    }
-
-    MPI_Status status;
-    MPI_File output;
-    int res = MPI_File_open(MPI_COMM_WORLD, file,
-                            MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL,
-                            &output);
-    if (res != MPI_SUCCESS) {
-        if (rank == 0) {
-            printf("Cannot open %s\n", file);
-        }
-        MPI_Finalize();
-        exit(1);
-    }
-    MPI_File_set_size(output, 0);
-    MPI_File_write_ordered(output, a_out, out_cnt, MPI_FLOAT, &status);
-    MPI_File_close(&output);
-    delete [] a_out;
-
-    return;
-}
 inline int compare_points(const void *a, const void *b)
 {
   Point *aptr = (Point * const)a;
   Point *bptr = (Point * const)b;
-  float ax = aptr->coord[0];
-  float bx = bptr->coord[0];
+  int c = axis ? 0 : 1;
+  float ax = aptr->coord[c];
+  float bx = bptr->coord[c];
 
   if (ax == bx)
       return 0;
@@ -409,37 +383,8 @@ void make_comparators(int procs, std::vector<comparator> &cmp)
     return;
 }
 
-int main(int argc, char **argv)
+void batcher(Point* &proc_points, int proc_elems, std::vector<comparator> cmp, int rank)
 {
-    int nx, ny;
-
-    // Parsing command line arguments
-    if (!check_args(argc, argv, nx, ny))
-        return 1;
-
-    MPI_Init(&argc, &argv);
-
-    int rank, procs;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &procs);
-
-    // Comparators network
-    std::vector<comparator> cmp;
-    make_comparators(procs, cmp);
-
-    // Calculating elems per processor
-    int n = nx*ny;
-    int fake = n % procs ? (procs - n % procs) : 0;
-    int elems = n + fake;
-    int proc_elems = elems / procs;
-
-    // Initializing points
-    srand(time(NULL) + rank);
-    Point *proc_points =
-        init_points(n, ny, procs, proc_elems, rank);
-
-    // Sorting
-    double start_time = MPI_Wtime();
     dhsort(proc_points, proc_elems);
 
     // Exchanging elements
@@ -491,6 +436,40 @@ int main(int argc, char **argv)
             swap_ptr(&proc_points, &tmp_points);
         }
     }
+}
+
+int main(int argc, char **argv)
+{
+    int nx, ny;
+
+    // Parsing command line arguments
+    if (!check_args(argc, argv, nx, ny))
+        return 1;
+
+    MPI_Init(&argc, &argv);
+
+    int rank, procs;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &procs);
+
+    // Comparators network
+    std::vector<comparator> cmp;
+    make_comparators(procs, cmp);
+
+    // Calculating elems per processor
+    int n = nx*ny;
+    int fake = n % procs ? (procs - n % procs) : 0;
+    int elems = n + fake;
+    int proc_elems = elems / procs;
+
+    // Initializing points
+    srand(time(NULL) + rank);
+    Point *proc_points =
+        init_points(n, ny, procs, proc_elems, rank);
+
+    // Sorting
+    double start_time = MPI_Wtime();
+    batcher(proc_points, proc_elems, cmp, rank);
     double end_time = MPI_Wtime();
     double time = end_time - start_time;
     double sort_time = 0;
@@ -499,10 +478,6 @@ int main(int argc, char **argv)
     if (!rank) {
         printf("Elems: %d\nProcs: %d\n", n, procs);
         printf("Sort time: %f sec.\n", sort_time);
-    }
-
-    if (argc > 3) {
-        write_output(proc_points, proc_elems, argv[3], nx, ny, rank);
     }
 
     delete [] proc_points;
