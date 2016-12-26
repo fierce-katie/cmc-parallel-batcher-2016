@@ -133,13 +133,11 @@ void dsort (Point *array, int n, int sorted)
     }
 }
 
-void print_domains(Point *points, int nx, int ny)
+void print_domains(Point *points, int n, int ny)
 {
-  for (int i = 0; i < nx; i++) {
-    for (int j = 0; j < ny; j++) {
-      Point cur = points[i*ny + j];
-      printf("%d %d %f %f %d\n", i, j, cur.coord[0], cur.coord[1], cur.domain);
-    }
+  for (int i = 0; i < n; i++) {
+    Point cur = points[i];
+    printf("%d %d %f %f %d\n", cur.index / ny, cur.index % ny, cur.coord[0], cur.coord[1], cur.domain);
   }
 }
 
@@ -190,6 +188,6 @@ int main(int argc, char **argv)
   decompose_time = clock() - decompose_time;
 
   printf("Decomposition time: %lf\n", (double)decompose_time/CLOCKS_PER_SEC);
-  print_domains(points, nx, ny);
+  print_domains(points, n, ny);
 
 }
