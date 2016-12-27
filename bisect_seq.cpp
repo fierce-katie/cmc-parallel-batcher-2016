@@ -1,5 +1,5 @@
 // Catherine Galkina, group 524, year 2016
-// File decompose_seq.cpp
+// File bisect_seq.cpp
 
 #include <stdio.h>
 #include <time.h>
@@ -28,7 +28,7 @@ float y(int i, int j)
 bool check_args(int argc, char **argv, int &nx, int &ny, int &k)
 {
     if (argc < 4) {
-        printf("Wrong arguments. Usage: decompose nx ny k\n");
+        printf("Wrong arguments. Usage: bisect_seq nx ny k\n");
         return false;
     }
     int check = sscanf(argv[1], "%d", &nx);
@@ -91,7 +91,7 @@ inline int compare_points(const void *a, const void *b)
   return -1;
 }
 
-void dsort (Point *array, int n, int sorted)
+void dsort(Point *array, int n, int sorted)
 {
     Point *a = array;
     Point *b = new Point[n];
@@ -141,7 +141,7 @@ void print_domains(Point *points, int n, int ny)
   }
 }
 
-void decompose(Point *points, int n0, int n, int dom0, int k)
+void bisect(Point *points, int n0, int n, int dom0, int k)
 {
   // One point
   if (n == 1) {
@@ -160,15 +160,15 @@ void decompose(Point *points, int n0, int n, int dom0, int k)
   dsort(points + n0, n, 1);
   axis = !axis;
 
-  // Split
+  // Split ratio
   int k1 = (k + 1) / 2;
   int k2 = k - k1;
   int n1 = n*k1/(double)k;
   int n2 = n - n1;
 
-  // Recursively decompose parts
-  decompose(points, n0, n1, dom0, k1);
-  decompose(points, n0 + n1, n2, dom0 + k1, k2);
+  // Recursively split parts
+  bisect(points, n0, n1, dom0, k1);
+  bisect(points, n0 + n1, n2, dom0 + k1, k2);
 }
 
 int main(int argc, char **argv)
@@ -183,11 +183,11 @@ int main(int argc, char **argv)
   srand(time(NULL));
   Point *points = init_points(n, ny, 1, n, 0);
 
-  clock_t decompose_time = clock();
-  decompose(points, 0, n, 0, k);
-  decompose_time = clock() - decompose_time;
+  clock_t t = clock();
+  bisect(points, 0, n, 0, k);
+  t = clock() - t;
 
-  printf("Decomposition time: %lf\n", (double)decompose_time/CLOCKS_PER_SEC);
+  printf("Decomposition time: %lf\n", (double)t/CLOCKS_PER_SEC);
   print_domains(points, n, ny);
 
 }

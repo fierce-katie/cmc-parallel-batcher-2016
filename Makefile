@@ -1,14 +1,14 @@
 CXXFLAGS = -g -Wall
 MPICXX = mpicxx
 
-bsort: bsort.cpp
+bisect: bisect.cpp
 	$(MPICXX) $(CXXFLAGS) -O3 $^ -lpthread -o $@
 
-deompose_seq:
+bisect_seq: bisect_seq.cpp
 	$(CXX) $(CXXFLAGS) $^ -o $@
 
-all: bsort decompose_seq
+all: bisect bisect_seq
 
 clean:
-	rm -f *.o bsort decompose_seq
+	rm -f *.o bisect bisect_seq
 

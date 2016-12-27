@@ -1,5 +1,5 @@
 // Catherine Galkina, group 524, year 2016
-// File bsort.cpp
+// File bisect.cpp
 #include <stdio.h>
 #include <stdlib.h>
 #include <mpi.h>
@@ -14,6 +14,7 @@
 #define MAX_HSORT_ELEMS 100000
 
 bool axis = true;
+int *domain_array;
 
 struct Point {
     float coord[2];
@@ -22,12 +23,12 @@ struct Point {
 
 float x(int i, int j)
 {
-    return (float)rand()/(float)(RAND_MAX/(i*j+1));
+    return 10*(float)rand()/(float)(RAND_MAX/(i*j+1));
 }
 
 float y(int i, int j)
 {
-    return (float)rand()/(float)(RAND_MAX/(i*j+1));
+    return 10*(float)rand()/(float)(RAND_MAX/(i*j+1));
 }
 
 Point* init_points(int n, int ny, int procs, int proc_elems, int rank)
@@ -101,10 +102,10 @@ void print_points(Point* p, int n, int rank, const char *comment)
     }
 }
 
-bool check_args(int argc, char **argv, int &nx, int &ny)
+bool check_args(int argc, char **argv, int &nx, int &ny, int &k)
 {
-    if (argc < 3) {
-        printf("Wrong arguments. Usage: bsort nx ny\n");
+    if (argc < 4) {
+        printf("Wrong arguments. Usage: bisect nx ny k\n");
         return false;
     }
     int check = sscanf(argv[1], "%d", &nx);
@@ -117,8 +118,13 @@ bool check_args(int argc, char **argv, int &nx, int &ny)
         printf("ny must be int: %s\n", argv[2]);
         return false;
     }
-    if (!((nx >= 1) && (ny >= 1))) {
-        printf("Wrong n1 or n2\n");
+    check = sscanf(argv[3], "%d", &k);
+    if (!check) {
+        printf("k must be int: %s\n", argv[3]);
+        return false;
+    }
+    if (!((nx >= 1) && (ny >= 1) && (k >= 1))) {
+        printf("Wrong nx or nx or k\n");
         return false;
     }
     return true;
@@ -244,7 +250,7 @@ void hsort_threads(Point *a, int n, int nthreads)
     delete [] pthread_args;
 }
 
-void dsort (Point *array, int n, int sorted)
+void dsort(Point *array, int n, int sorted)
 {
     Point *a = array;
     Point *b = new Point[n];
@@ -383,7 +389,8 @@ void make_comparators(int procs, std::vector<comparator> &cmp)
     return;
 }
 
-void batcher(Point* &proc_points, int proc_elems, std::vector<comparator> cmp, int rank)
+void batcher(Point* &proc_points, int proc_elems, std::vector<comparator> cmp,
+             int rank, MPI_Comm comm)
 {
     dhsort(proc_points, proc_elems);
 
@@ -396,9 +403,9 @@ void batcher(Point* &proc_points, int proc_elems, std::vector<comparator> cmp, i
     for (it = cmp.begin(); it != cmp.end(); it++) {
         if (rank == it->first) {
             MPI_Send(proc_points, proc_elems, MPI_POINT,
-                     it->second, 0, MPI_COMM_WORLD);
+                     it->second, 0, comm);
             MPI_Recv(other_points, proc_elems, MPI_POINT,
-                     it->second, 0, MPI_COMM_WORLD, &status);
+                     it->second, 0, comm, &status);
             int idx = 0;
             int other_idx = 0;
             for (int tmp_idx = 0; tmp_idx < proc_elems; tmp_idx++) {
@@ -417,9 +424,9 @@ void batcher(Point* &proc_points, int proc_elems, std::vector<comparator> cmp, i
 
         if (rank == it->second) {
             MPI_Recv(other_points, proc_elems, MPI_POINT,
-                     it->first, 0, MPI_COMM_WORLD, &status);
+                     it->first, 0, comm, &status);
             MPI_Send(proc_points, proc_elems, MPI_POINT,
-                     it->first, 0, MPI_COMM_WORLD);
+                     it->first, 0, comm);
             int idx = proc_elems - 1;
             int other_idx = proc_elems - 1;
             for (int tmp_idx = proc_elems - 1; tmp_idx >= 0; tmp_idx--) {
@@ -438,12 +445,47 @@ void batcher(Point* &proc_points, int proc_elems, std::vector<comparator> cmp, i
     }
 }
 
+void bisect_seq(Point *points, int n0, int n, int dom0, int k)
+{
+  // One point
+  if (n == 1) {
+    domain_array[n0] = dom0;
+    return;
+  }
+
+  // One domain
+  if (k == 1) {
+    for (int i = 0; i < n; i++)
+      domain_array[n0 + i] = dom0;
+    return;
+  }
+
+  // Sort and change axis
+  dsort(points + n0, n, 1);
+  axis = !axis;
+
+  // Split ratio
+  int k1 = (k + 1) / 2;
+  int k2 = k - k1;
+  int n1 = n*k1/(double)k;
+  int n2 = n - n1;
+
+  // Recursively bisect parts
+  bisect_seq(points, n0, n1, dom0, k1);
+  bisect_seq(points, n0 + n1, n2, dom0 + k1, k2);
+}
+
+void bisect(int dom0, int k, int n, Point *&points, int &proc_points,
+            MPI_Comm comm)
+{
+}
+
 int main(int argc, char **argv)
 {
-    int nx, ny;
+    int nx, ny, k;
 
     // Parsing command line arguments
-    if (!check_args(argc, argv, nx, ny))
+    if (!check_args(argc, argv, nx, ny, k))
         return 1;
 
     MPI_Init(&argc, &argv);
@@ -467,20 +509,20 @@ int main(int argc, char **argv)
     Point *proc_points =
         init_points(n, ny, procs, proc_elems, rank);
 
-    // Sorting
+    // Decomposition
     double start_time = MPI_Wtime();
-    batcher(proc_points, proc_elems, cmp, rank);
+    bisect(0, k, n, proc_points, proc_elems, MPI_COMM_WORLD);
     double end_time = MPI_Wtime();
     double time = end_time - start_time;
-    double sort_time = 0;
-    MPI_Reduce(&time, &sort_time, 1, MPI_FLOAT, MPI_MAX, 0, MPI_COMM_WORLD);
+    double max_time = 0;
+    MPI_Reduce(&time, &max_time, 1, MPI_FLOAT, MPI_MAX, 0, MPI_COMM_WORLD);
 
     if (!rank) {
-        printf("Elems: %d\nProcs: %d\n", n, procs);
-        printf("Sort time: %f sec.\n", sort_time);
+        printf("Decomposition time: %f sec.\n", max_time);
     }
 
     delete [] proc_points;
+    delete [] domain_array;
     MPI_Finalize();
     return 0;
 }
