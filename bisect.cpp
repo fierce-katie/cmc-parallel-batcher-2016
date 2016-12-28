@@ -9,6 +9,7 @@
 #include <vector>
 #include <pthread.h>
 #include <cstddef>
+#include <float.h>
 
 #define MIN_THREADS_NUM 4
 #define MAX_HSORT_ELEMS 100000
@@ -50,6 +51,14 @@ Point* init_points(int n, int ny, int procs, int proc_elems, int rank)
         p.index = i*ny + j;
         res[k] = p;
     }
+    for (int k = real_elems; k < proc_elems; k++) {
+        Point p;
+        p.coord[0] = FLT_MAX;
+        p.coord[1] = FLT_MAX;
+        p.index = -1;
+        res[k] = p;
+    }
+
     return res;
 }
 
@@ -161,17 +170,17 @@ void swap_ptr(void *ptr1_ptr, void *ptr2_ptr)
 
 inline int compare_points(const void *a, const void *b)
 {
-  Point *aptr = (Point * const)a;
-  Point *bptr = (Point * const)b;
-  int c = axis ? 0 : 1;
-  float ax = aptr->coord[c];
-  float bx = bptr->coord[c];
+    Point *aptr = (Point * const)a;
+    Point *bptr = (Point * const)b;
+    int c = axis ? 0 : 1;
+    float ax = aptr->coord[c];
+    float bx = bptr->coord[c];
 
-  if (ax == bx)
-      return 0;
-  else if (ax > bx)
-      return 1;
-  return -1;
+    if (ax == bx)
+        return 0;
+    else if (ax > bx)
+        return 1;
+    return -1;
 }
 
 struct PthreadArgs {
@@ -447,37 +456,116 @@ void batcher(Point* &proc_points, int proc_elems, std::vector<comparator> cmp,
 
 void bisect_seq(Point *points, int n0, int n, int dom0, int k)
 {
-  // One point
-  if (n == 1) {
-    domain_array[n0] = dom0;
-    return;
-  }
+    // One point
+    if (n == 1) {
+      domain_array[n0] = dom0;
+      return;
+    }
 
-  // One domain
-  if (k == 1) {
-    for (int i = 0; i < n; i++)
-      domain_array[n0 + i] = dom0;
-    return;
-  }
+    // One domain
+    if (k == 1) {
+      for (int i = 0; i < n; i++)
+        domain_array[n0 + i] = dom0;
+      return;
+    }
 
-  // Sort and change axis
-  dsort(points + n0, n, 1);
-  axis = !axis;
+    // Sort and change axis
+    dhsort(points + n0, n);
+    axis = !axis;
 
-  // Split ratio
-  int k1 = (k + 1) / 2;
-  int k2 = k - k1;
-  int n1 = n*k1/(double)k;
-  int n2 = n - n1;
+    // Split ratio
+    int k1 = (k + 1) / 2;
+    int k2 = k - k1;
+    int n1 = n*k1/(double)k;
+    int n2 = n - n1;
 
-  // Recursively bisect parts
-  bisect_seq(points, n0, n1, dom0, k1);
-  bisect_seq(points, n0 + n1, n2, dom0 + k1, k2);
+    // Recursively bisect parts
+    bisect_seq(points, n0, n1, dom0, k1);
+    bisect_seq(points, n0 + n1, n2, dom0 + k1, k2);
 }
 
-void bisect(int dom0, int k, int n, Point *&points, int &proc_points,
+int remove_fake(Point **points, int n)
+{
+    Point *res_points = new Point[n];
+    int res_n = 0;
+    for (int i = 0; i < n; i++) {
+        if ((*points)[i].index != -1)
+          res_points[res_n++] = (*points)[i];
+    }
+    delete [] (*points);
+    *points = res_points;
+    return res_n;
+}
+
+double min_coord(Point *points, int n, int c)
+{
+    double res = FLT_MAX;
+    for (int i = 0; i < n; i++)
+      if ((points[i].index != -1) && (points[i].coord[c] < res))
+        res = points[i].coord[c];
+    return res;
+}
+
+double max_coord(Point *points, int n, int c)
+{
+    double res = FLT_MIN;
+    for (int i = 0; i < n; i++)
+      if ((points[i].index != -1) && (points[i].coord[c] > res))
+        res = points[i].coord[c];
+    return res;
+}
+
+void change_axis(Point *points, int n, MPI_Comm comm)
+{
+    double local_minx = min_coord(points, n, 0);
+    double local_miny = min_coord(points, n, 1);
+    double local_maxx = max_coord(points, n, 0);
+    double local_maxy = max_coord(points, n, 1);
+    double minx = 0, miny = 0, maxx = 0, maxy = 0;
+    MPI_Allreduce(&local_minx, &minx, 1, MPI_DOUBLE, MPI_MIN, comm);
+    MPI_Allreduce(&local_miny, &miny, 1, MPI_DOUBLE, MPI_MIN, comm);
+    MPI_Allreduce(&local_maxx, &maxx, 1, MPI_DOUBLE, MPI_MAX, comm);
+    MPI_Allreduce(&local_maxy, &maxy, 1, MPI_DOUBLE, MPI_MAX, comm);
+    double dx = maxx - minx, dy = maxy - miny;
+    axis = dx <= dy;
+}
+
+void bisect(Point **points, int &proc_elems, int n, int k, int dom0,
             MPI_Comm comm)
 {
+    // One domain
+    if (k == 1) {
+        int real_elems = remove_fake(points, proc_elems);
+        domain_array = new int[real_elems];
+        for (int i = 0; i < real_elems; i++)
+            domain_array[i] = dom0;
+        proc_elems = real_elems;
+        return;
+    }
+
+    int rank, procs;
+    MPI_Comm_rank(comm, &rank);
+    MPI_Comm_size(comm, &procs);
+
+    // One proc
+    if (procs == 1) {
+        int real_elems = remove_fake(points, proc_elems);
+        domain_array = new int[real_elems];
+        bisect_seq(*points, 0, real_elems, dom0, k);
+        proc_elems = real_elems;
+        return;
+    }
+
+    // Split ratio
+    int k1 = (k + 1) / 2;
+    int k2 = k - k1;
+    int n1 = n*k1/(double)k;
+    int n2 = n - n1;
+    int middle = n1 % proc_elems;
+    int procs1 = n1 / proc_elems;
+    int psplit = procs1 ? (rank >= procs1 ? 0 : 1) : (rank > procs1 ? 0 : 1);
+
+    change_axis(*points, proc_elems, comm);
 }
 
 int main(int argc, char **argv)
@@ -494,10 +582,6 @@ int main(int argc, char **argv)
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &procs);
 
-    // Comparators network
-    std::vector<comparator> cmp;
-    make_comparators(procs, cmp);
-
     // Calculating elems per processor
     int n = nx*ny;
     int fake = n % procs ? (procs - n % procs) : 0;
@@ -509,9 +593,11 @@ int main(int argc, char **argv)
     Point *proc_points =
         init_points(n, ny, procs, proc_elems, rank);
 
+    print_points(proc_points, proc_elems, rank, "initial");
+
     // Decomposition
     double start_time = MPI_Wtime();
-    bisect(0, k, n, proc_points, proc_elems, MPI_COMM_WORLD);
+    bisect(&proc_points, proc_elems, n, k, 0, MPI_COMM_WORLD);
     double end_time = MPI_Wtime();
     double time = end_time - start_time;
     double max_time = 0;
@@ -520,6 +606,13 @@ int main(int argc, char **argv)
     if (!rank) {
         printf("Decomposition time: %f sec.\n", max_time);
     }
+
+    /*
+    for (int i = 0; i < proc_elems; i++) {
+        Point p = proc_points[i];
+        printf("%d %d %d %f %f %d\n", p.index, p.index / ny, p.index % ny, p.coord[0], p.coord[1], domain_array[i]);
+    }
+    */
 
     delete [] proc_points;
     delete [] domain_array;
