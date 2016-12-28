@@ -399,13 +399,15 @@ void make_comparators(int procs, std::vector<comparator> &cmp)
 }
 
 void batcher(Point* &proc_points, int proc_elems, std::vector<comparator> cmp,
-             int rank, MPI_Comm comm)
+             MPI_Comm comm)
 {
     dhsort(proc_points, proc_elems);
 
     // Exchanging elements
     Point *tmp_points = new Point[proc_elems];
     Point *other_points = new Point[proc_elems];
+    int rank;
+    MPI_Comm_rank(comm, &rank);
     MPI_Status status;
     MPI_Datatype MPI_POINT = pointType();
     std::vector<comparator>::iterator it;
@@ -530,6 +532,25 @@ void change_axis(Point *points, int n, MPI_Comm comm)
     axis = dx <= dy;
 }
 
+Point *add_fake(Point *points, int n, int procs)
+{
+    int proc_elems = ceil(n/(double)procs);
+    Point *res = new Point[procs*proc_elems];
+    int idx = 0;
+    for (int i = 0; i < n; i++, idx++) {
+        res[idx] = points[i];
+        points[i].index = -1;
+        points[i].coord[0] = FLT_MAX;
+        points[i].coord[1] = FLT_MAX;
+    }
+    for (; idx < procs*proc_elems; idx++) {
+        res[idx].index = -1;
+        res[idx].coord[0] = FLT_MAX;
+        res[idx].coord[1] = FLT_MAX;
+    }
+    return res;
+}
+
 void bisect(Point **points, int &proc_elems, int n, int k, int dom0,
             MPI_Comm comm)
 {
@@ -566,6 +587,39 @@ void bisect(Point **points, int &proc_elems, int n, int k, int dom0,
     int psplit = procs1 ? (rank >= procs1 ? 0 : 1) : (rank > procs1 ? 0 : 1);
 
     change_axis(*points, proc_elems, comm);
+
+    // Sort
+    std::vector<comparator> cmp;
+    make_comparators(procs, cmp);
+    batcher(*points, proc_elems, cmp, comm);
+
+    // Split procs
+    MPI_Comm comm_split;
+    MPI_Comm_split(comm, psplit, rank, &comm_split);
+
+    // Rearrange elements on edges for recursive call
+    MPI_Status s;
+    MPI_Datatype MPI_POINT = pointType();
+    if (procs1) {
+        if (rank <= procs1) {
+            int proc_elems1 = ceil(middle/(double)procs1);
+            if (rank == procs1) { // send to the left
+                Point *tmp = add_fake(*points, middle, procs1);
+                for (int i = 0; i < procs1; i++)
+                    MPI_Send(tmp + i*proc_elems1, proc_elems1, MPI_POINT, i, 0, comm);
+                delete [] tmp;
+                bisect(points, proc_elems, n2, k2, dom0 + k1, comm_split);
+            } else { // recieve new elems
+                Point *other = new Point[proc_elems + proc_elems1];
+                MPI_Recv(other + proc_elems, proc_elems1, MPI_POINT, procs1, 0, comm, &s);
+                memcpy(other, *points, proc_elems * sizeof(Point));
+                proc_elems += proc_elems1;
+                delete [] (*points);
+                *points = other;
+                bisect(points, proc_elems, n1, k1, dom0, comm_split);
+            }
+        }
+    }
 }
 
 int main(int argc, char **argv)
@@ -607,12 +661,10 @@ int main(int argc, char **argv)
         printf("Decomposition time: %f sec.\n", max_time);
     }
 
-    /*
     for (int i = 0; i < proc_elems; i++) {
         Point p = proc_points[i];
         printf("%d %d %d %f %f %d\n", p.index, p.index / ny, p.index % ny, p.coord[0], p.coord[1], domain_array[i]);
     }
-    */
 
     delete [] proc_points;
     delete [] domain_array;
