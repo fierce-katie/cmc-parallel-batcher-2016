@@ -78,17 +78,17 @@ Point* init_points(int n, int ny, int procs, int proc_elems, int rank)
 
 inline int compare_points(const void *a, const void *b)
 {
-  Point *aptr = (Point * const)a;
-  Point *bptr = (Point * const)b;
-  int c = axis ? 0 : 1;
-  float ax = aptr->coord[c];
-  float bx = bptr->coord[c];
+    Point *aptr = (Point * const)a;
+    Point *bptr = (Point * const)b;
+    int c = axis ? 0 : 1;
+    float ax = aptr->coord[c];
+    float bx = bptr->coord[c];
 
-  if (ax == bx)
-      return 0;
-  else if (ax > bx)
-      return 1;
-  return -1;
+    if (ax == bx)
+        return 0;
+    else if (ax > bx)
+        return 1;
+    return -1;
 }
 
 void dsort(Point *array, int n, int sorted)
@@ -135,59 +135,58 @@ void dsort(Point *array, int n, int sorted)
 
 void print_domains(Point *points, int n, int ny)
 {
-  for (int i = 0; i < n; i++) {
-    Point cur = points[i];
-    printf("%d %d %f %f %d\n", cur.index / ny, cur.index % ny, cur.coord[0], cur.coord[1], cur.domain);
-  }
+    for (int i = 0; i < n; i++) {
+      Point cur = points[i];
+      printf("%d %d %f %f %d\n", cur.index / ny, cur.index % ny, cur.coord[0], cur.coord[1], cur.domain);
+    }
 }
 
 void bisect(Point *points, int n0, int n, int dom0, int k)
 {
-  // One point
-  if (n == 1) {
-    points[n0].domain = dom0;
-    return;
-  }
+    // One point
+    if (n == 1) {
+      points[n0].domain = dom0;
+      return;
+    }
 
-  // One domain
-  if (k == 1) {
-    for (int i = 0; i < n; i++)
-      points[n0 + i].domain = dom0;
-    return;
-  }
+    // One domain
+    if (k == 1) {
+      for (int i = 0; i < n; i++)
+        points[n0 + i].domain = dom0;
+      return;
+    }
 
-  // Sort and change axis
-  dsort(points + n0, n, 1);
-  axis = !axis;
+    // Sort and change axis
+    dsort(points + n0, n, 1);
+    axis = !axis;
 
-  // Split ratio
-  int k1 = (k + 1) / 2;
-  int k2 = k - k1;
-  int n1 = n*k1/(double)k;
-  int n2 = n - n1;
+    // Split ratio
+    int k1 = (k + 1) / 2;
+    int k2 = k - k1;
+    int n1 = n*k1/(double)k;
+    int n2 = n - n1;
 
-  // Recursively split parts
-  bisect(points, n0, n1, dom0, k1);
-  bisect(points, n0 + n1, n2, dom0 + k1, k2);
+    // Recursively split parts
+    bisect(points, n0, n1, dom0, k1);
+    bisect(points, n0 + n1, n2, dom0 + k1, k2);
 }
 
 int main(int argc, char **argv)
 {
-  int nx, ny, k;
+    int nx, ny, k;
 
-  // Parsing command line arguments
-  if (!check_args(argc, argv, nx, ny, k))
-    return 1;
+    // Parsing command line arguments
+    if (!check_args(argc, argv, nx, ny, k))
+      return 1;
 
-  int n = nx*ny;
-  srand(time(NULL));
-  Point *points = init_points(n, ny, 1, n, 0);
+    int n = nx*ny;
+    srand(time(NULL));
+    Point *points = init_points(n, ny, 1, n, 0);
 
-  clock_t t = clock();
-  bisect(points, 0, n, 0, k);
-  t = clock() - t;
+    clock_t t = clock();
+    bisect(points, 0, n, 0, k);
+    t = clock() - t;
 
-  printf("Decomposition time: %lf\n", (double)t/CLOCKS_PER_SEC);
-  print_domains(points, n, ny);
-
+    printf("Decomposition time: %lf\n", (double)t/CLOCKS_PER_SEC);
+    print_domains(points, n, ny);
 }
