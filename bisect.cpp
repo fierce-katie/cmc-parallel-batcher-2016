@@ -647,6 +647,34 @@ void bisect(Point **points, int &proc_elems, int n, int k, int dom0,
     }
 }
 
+double abs(double x)
+{
+    return (x > 0) ? x : -x;
+}
+
+bool connected(Point p1, Point p2) {
+    double x1 = p1.coord[0];
+    double y1 = p1.coord[1];
+    double x2 = p2.coord[0];
+    double y2 = p2.coord[1];
+    return (((x1 == x2) && (abs(y1 - y2) == 1)) ||
+            ((y1 == y2) && (abs(x1 - x2) == 1)));
+}
+
+int edges(Point *points, int n)
+{
+    int res = 0;
+    for (int i = 0; i < n; i++) {
+        for (int j = i + 1; j < n; j++) {
+            Point p1 = points[i];
+            Point p2 = points[j];
+            if ((domain_array[i] == domain_array[j]) && connected(p1, p2))
+                res++;
+        }
+    }
+    return res;
+}
+
 int main(int argc, char **argv)
 {
     int nx, ny, k;
@@ -683,13 +711,20 @@ int main(int argc, char **argv)
     double max_time = 0;
     MPI_Reduce(&time, &max_time, 1, MPI_FLOAT, MPI_MAX, 0, MPI_COMM_WORLD);
 
-    if (!rank) {
-        printf("Decomposition time: %f sec.\n", max_time);
-    }
-
     for (int i = 0; i < proc_elems; i++) {
         Point p = proc_points[i];
         printf("%d %d %d %f %f %d\n", p.index, p.index / ny, p.index % ny, p.coord[0], p.coord[1], domain_array[i]);
+    }
+
+    int total_edges = nx*(ny - 1) + ny*(nx - 1);
+    int local_edges = edges(proc_points, proc_elems);
+    int sum_edges = 0;
+    MPI_Reduce(&local_edges, &sum_edges, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+    int cut = total_edges - sum_edges;
+
+    if (!rank) {
+        printf("Decomposition time: %f sec.\n", max_time);
+        printf("Edges cut: %d of %d\n", cut, total_edges);
     }
 
     delete [] proc_points;
