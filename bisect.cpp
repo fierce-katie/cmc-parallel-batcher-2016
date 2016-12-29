@@ -719,7 +719,7 @@ int main(int argc, char **argv)
     /*
     for (int i = 0; i < proc_elems; i++) {
         Point p = proc_points[i];
-        printf("%d %d %d %f %f %d\n", p.index, p.index / ny, p.index % ny, p.coord[0], p.coord[1], domain_array[i]);
+        printf("P %d %d %d %f %f %d\n", p.index, p.index / ny, p.index % ny, p.coord[0], p.coord[1], domain_array[i]);
     }*/
 
     // Remove fake
@@ -733,6 +733,12 @@ int main(int argc, char **argv)
             proc_domains[new_proc_elems++].domain = domain_array[i];
         }
     }
+/*
+    for (int i = 0; i < new_proc_elems; i++) {
+        Domain d = proc_domains[i];
+        printf("D %d %d %d %f %f %d\n", d.index, d.index / ny, d.index % ny, d.coord[0], d.coord[1], d.domain);
+    }
+*/
 
     // Cut edges
     int total_edges = nx*(ny - 1) + ny*(nx - 1);

@@ -214,8 +214,8 @@ int main(int argc, char **argv)
     bisect(points, 0, n, 0, k);
     t = clock() - t;
 
-    printf("Decomposition time: %lf\n", (double)t/CLOCKS_PER_SEC);
-//    print_domains(points, n, ny);
+    printf("Decomposition time: %lf sec.\n", (double)t/CLOCKS_PER_SEC);
+    //print_domains(points, n, ny);
 
     int total_edges = nx*(ny - 1) + ny*(nx - 1);
     int cut = total_edges - edges(points, n, ny);
