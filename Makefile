@@ -5,7 +5,7 @@ bisect: bisect.cpp
 	$(MPICXX) $(CXXFLAGS) -O3 $^ -lpthread -o $@
 
 bisect_seq: bisect_seq.cpp
-	$(CXX) $(CXXFLAGS) $^ -o $@
+	$(MPICXX) $(CXXFLAGS) -o3 $^ -o $@
 
 all: bisect bisect_seq
 

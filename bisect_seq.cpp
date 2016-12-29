@@ -171,6 +171,31 @@ void bisect(Point *points, int n0, int n, int dom0, int k)
     bisect(points, n0 + n1, n2, dom0 + k1, k2);
 }
 
+bool connected(Point p1, Point p2, int ny)
+{
+    int i1 = p1.index / ny;
+    int j1 = p1.index % ny;
+    int i2 = p2.index / ny;
+    int j2 = p2.index % ny;
+    return (((i1 == i2) && (abs(j1 - j2) == 1)) ||
+            ((j1 == j2) && (abs(i1 - i2) == 1)));
+}
+
+int edges(Point *p, int n, int ny)
+{
+    int res = 0;
+    for (int i = p[0].domain, j = 0; j < n; i++)
+        for (; p[j].domain == i && j < n; j++) {
+            Point p1 = p[j];
+            for (int k = j + 1; p[k].domain == i && k < n; k++) {
+                Point p2 = p[k];
+                if (connected(p1, p2, ny))
+                    res++;
+            }
+        }
+    return res;
+}
+
 int main(int argc, char **argv)
 {
     int nx, ny, k;
@@ -188,5 +213,11 @@ int main(int argc, char **argv)
     t = clock() - t;
 
     printf("Decomposition time: %lf\n", (double)t/CLOCKS_PER_SEC);
-    print_domains(points, n, ny);
+//    print_domains(points, n, ny);
+
+    int total_edges = nx*(ny - 1) + ny*(nx - 1);
+    int cut = total_edges - edges(points, n, ny);
+    printf("Edges cut: %d of %d\n", cut, total_edges);
+    return 0;
 }
+
