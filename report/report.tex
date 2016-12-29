@@ -1,0 +1,413 @@
+\documentclass[oneside,final,14pt]{extreport}
+\usepackage[T1,T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+\usepackage{vmargin}
+\usepackage{textcomp}
+\usepackage{graphicx}
+\usepackage{diagbox}
+\newcommand*{\No}{\textnumero}
+\setpapersize{A4}
+\setmarginsrb{3cm}{2cm}{1cm}{2cm}{0pt}{0mm}{0pt}{13mm}
+\usepackage{indentfirst}
+\sloppy
+\setcounter{page}{2}
+\clubpenalty = 10000
+\widowpenalty = 10000
+
+\begin{document}
+{\let\clearpage\relax \chapter*{Постановка задачи}}
+
+В задаче требовалось реализовать параллельный алгоритм для вычислительной
+системы с распределённой памятью, обеспечивающий разбиение узлов сетки
+на домены методом рекурсивной координатной бисекции. Число вершин в каждом
+домене должно отличаться не более чем на единицу.
+
+На вход программе подаётся размер сетки ($n_1$, $n_2$) и количество доменов~$k$. Узлы сетки
+представлены структурой \texttt{Point}, которая имеет следующий вид:
+\begin{verbatim}
+    Point {
+        float coord[2];
+        int index;
+    };
+\end{verbatim}
+Сетка представляется в программе как массив из таких структур длины $n_1~*~n_2$.
+
+Координаты вершины однозначно определяются индексами $i$ и $j$. Смежными с
+ней считаются вершины с индексами $(i - 1, j)$, $(i, j - 1)$, $(i + 1, j)$
+и $(i, j + 1)$. Таким образом, заданная сетка топологически эквивалентна
+прямоугольной.
+
+Программа должна выводить в файл результат декомпозиции, указывая для
+каждой точки её индексы, координаты и домен, в который она была распределена.
+Также должно быть подсчитано количество разрезанных рёбер.
+
+\chapter*{Метод решения}
+
+\section*{Инициализация сетки}
+
+Для того чтобы перед началом работы на каждом процессоре было одинкаковое количество
+элементов, при необходимости
+исходный массив дополняется фиктивными элементами типа \texttt{Point} с
+отрицательным значением индекса. Распределение фиктивных элементов происходит
+при инициализации массивов на каждом из процессоров.
+
+Наличие фиктивного элемента на процессоре зависит от его номера (\texttt{rank}).
+Количество процессоров, на которых нет фиктивных элементов, равно остатку от
+деления количества элементов в исходном массиве на количество процессоров.
+Если номер процессора меньше этого значения, то инициализируются все элементы
+соответствующего фрагмента массива. В противном случае, последний элемент
+массива считается фиктивным, и его поле \texttt{index} инициализируется
+отрицательным значением, а кординаты~--- константой \texttt{FLT\_MAX}
+(максимальное число типа \texttt{float}).
+
+Распределение элементов реализовано в функции \texttt{init\_points}
+(см.~приложение~\ref{app:par}).
+
+\section*{Метод рекурсивной координатной бисекции для одного процессора}
+
+Основная идея последовательного алгоритма состоит в следующем: на каждом
+шаге алгоритма сетка разбивается на две части в определённой пропорции по
+одной из осей, затем рекурсивно разбивается каждая из этих частей~\cite{baraban}.
+Пропорция вычисляется таким образом, чтобы количество элементов в каждой
+части отличалось не более чем на единицу.
+
+Пусть имется сетка (массив) из $n$ вершин, которую нужно разбить на $k$ доменов.
+Функция, реализующая алгоритм рекурсивной координатной бисекции, принимает
+следующие аргументы: адрес начала массива точек, сдвиг для текущего фрагмента,
+количество точек в текущем фрагменте, наименьший номер домена, в который ещё
+не были распределены точки (далее будем называть его темущим доменом),
+и общее количество доменов, на которое необходимо разбить текущий фрагмент.
+
+Базой рекурсии являются два случая. Во-первых, если массив состоит из одного
+эелемента, то этот элемент распределяется в текущий домен. Во-вторых,
+если текущий фрагмент нужно разбить на один домен ($k = 1$), то все
+элементы из фрагменты распределяются в этот домен.
+
+В общем случае фрагмент массива сначала сортируется по одной из координатных
+осей. В программе используется алгоритм сортировки слиянием (функция
+\texttt{dsort},~\cite{sortbaraban}). Затем фрагмент разбивается на две части
+в отношении
+$\frac{k_1}{k_2}$, где $k_1 = \frac{k + 1}{2}$, $k_2 = k - k_1$.
+В соответствии с этой пропорцией вычисляются новые значения для количества
+элементов в новых фрагментах и их сдвиг относительно начала массива.
+Эти фрагменты разбиваются по другой оси на $k_1$ и $k_2$ доменов соответственно
+с помощью рекурсивных вызовов.
+
+Рeализация описанного последовательного алгоритма приведена в
+приложении~\ref{app:seq} (функция \texttt{bisect}).
+
+\section*{Метод рекурсивной координатной бисекции для нескольких процессоров}
+
+\section*{Вывод результата}
+
+\chapter*{Используемая вычислительная система}
+
+Вычисления проводились на системе IBM Blue Gene/P.
+Характеристики системы представлены на сайте~\cite{bluegene}.
+
+Система состоит из двух стоек, включающих 8192 процессорных ядер
+(2*1024 четырехъядерных вычислительных узлов), с пиковой производительностью
+27,9 терафлопс (27,8528 триллионов операций с плавающей точкой в секунду).
+
+Характеристики вычислительного узла:
+
+\begin{itemize}
+    \item четыре микропроцессорных ядра;
+    \item пиковая производительность: 13,6 ГФлопс;
+    \item пропускная способность памяти: 13,6 ГБ/с;
+    \item 2 ГБ общей памяти;
+    \item 2 * 4 МБ кэш-памяти 2-го уровня;
+    \item легковесное ядро, представляющее собой Linux-подобную операционную систему,
+        поддерживающую значительное подмножество Linux-совместимых системных вызовов;
+    \item асинхронные операции межпроцессорных обменов (выполняются параллельно с вычислениями);
+    \item операции ввода-вывода перенаправляются I/O-картам через сеть коллективных операций;
+    \item MPI-операции типа «точка-точка» осуществляются через сеть трехмерного тора.
+        \begin{itemize}
+            \item Вычислительный узел имеет двунаправленные связи с шестью соседями.
+            \item Пропускная способность каждого соединения — 425 МБ/с (5,1 ГБ/с для всех 12
+        каналов).
+            \item Латентность (ближайший сосед):
+                \begin{itemize}
+                    \item 32-байтный пакет~--- 0,1 мкс.
+                    \item 256-байтный пакет~--- 0,8 мкс.
+                \end{itemize}
+        \end{itemize}
+\end{itemize}
+
+
+\chapter*{Анализ полученных результатов}
+
+\begin{thebibliography}{0}
+\addcontentsline{toc}{chapter}{Литература}
+    \bibitem{baraban}
+        М.\,В.~Якобовский.
+        Введение в параллельные методы решения задач: Учебное пособие / Предисл.: В. А. Садовничий.
+        М.: Издательство Московского университета, 2013.
+
+    \bibitem{sortbaraban}
+        М.\,В.~Якобовский.
+        Параллельные алгоритмы сортировки больших объемов данных.
+        2004, 2008.
+
+    \bibitem{bluegene}
+        Описание вычислительного комплекса IBM Blue Gene/P.
+        http://hpc.cmc.msu.ru/bgp
+\end{thebibliography}
+
+\newpage
+\appendix
+\chapter{Последовательный алгоритм декомпозиции} \label{app:seq}
+\begin{verbatim}
+// File bisect_seq.cpp
+
+#include <stdio.h>
+#include <time.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+
+bool axis = true;
+
+struct Point {
+    float coord[2];
+    int index;
+    int domain;
+};
+
+float x(int i, int j)
+{
+    return i;
+}
+
+float y(int i, int j)
+{
+    return j;
+}
+
+bool check_args(int argc, char **argv, int &nx, int &ny, int &k)
+{
+    if (argc < 4) {
+        printf("Wrong arguments. Usage: bisect_seq nx ny k [output]\n");
+        return false;
+    }
+    int check = sscanf(argv[1], "%d", &nx);
+    if (!check) {
+        printf("nx must be int: %s\n", argv[1]);
+        return false;
+    }
+    check = sscanf(argv[2], "%d", &ny);
+    if (!check) {
+        printf("ny must be int: %s\n", argv[2]);
+        return false;
+    }
+    check = sscanf(argv[3], "%d", &k);
+    if (!check) {
+        printf("k must be int: %s\n", argv[3]);
+        return false;
+    }
+    if (!((nx >= 1) && (ny >= 1) && (k >= 1))) {
+        printf("Wrong nx or nx or k\n");
+        return false;
+    }
+    return true;
+}
+
+Point* init_points(int n, int ny, int procs, int proc_elems, int rank)
+{
+    Point *res = new Point[proc_elems];
+    int tmp = n/procs;
+    int not_fake = n % procs;
+    int real_elems = rank < not_fake ? tmp + 1 : tmp;
+    int delta;
+    if (rank < not_fake)
+        delta = rank*proc_elems;
+    else
+        delta = not_fake*proc_elems + tmp*(rank - not_fake);
+    for (int k = 0; k < real_elems; k++) {
+        int i = (k + delta) / ny, j = (k + delta) % ny;
+        Point p;
+        p.coord[0] = x(i, j);
+        p.coord[1] = y(i, j);
+        p.index = i*ny + j;
+        p.domain = -1;
+        res[k] = p;
+    }
+    return res;
+}
+
+inline int compare_points(const void *a, const void *b)
+{
+    Point *aptr = (Point * const)a;
+    Point *bptr = (Point * const)b;
+    int c = axis ? 0 : 1;
+    float ax = aptr->coord[c];
+    float bx = bptr->coord[c];
+
+    if (ax == bx)
+        return 0;
+    else if (ax > bx)
+        return 1;
+    return -1;
+}
+
+void dsort(Point *array, int n, int sorted)
+{
+    Point *a = array;
+    Point *b = new Point[n];
+    Point *c;
+
+    for (int i = sorted; i < n ; i *= 2) {
+        for (int j = 0; j < n; j = j + 2*i) {
+            int r = j + i;
+
+            int n1 = (i < n - j) ? i : n - j;
+            int n2 = (i < n - r) ? i : n - r;
+            n1 = (n1 < 0) ? 0 : n1;
+            n2 = (n2 < 0) ? 0 : n2;
+
+            for (int ia = 0, ib = 0, k = 0; k < n1 + n2; k++) {
+                if (ia >= n1)
+                    b[j+k] = a[r+ib++];
+                else if (ib >= n2)
+                    b[j+k]=a[j+ia++];
+                else if (compare_points(&a[j+ia], &a[r+ib]) < 0)
+                    b[j+k]=a[j+ia++];
+                else
+                    b[j+k]=a[r+ib++];
+            }
+        }
+        c = a;
+        a = b;
+        b = c;
+    }
+
+    c = a;
+    a = b;
+    b = c;
+    if (b != array) {
+        memcpy(array, b, n*sizeof(*array));
+        delete [] b;
+    } else {
+        delete [] a;
+    }
+}
+
+void print_domains(Point *points, int n, int ny)
+{
+    for (int i = 0; i < n; i++) {
+      Point cur = points[i];
+      printf("%d %d %f %f %d\n", cur.index / ny, cur.index % ny,
+             cur.coord[0], cur.coord[1], cur.domain);
+    }
+}
+
+void bisect(Point *points, int n0, int n, int dom0, int k)
+{
+    // One point
+    if (n == 1) {
+      points[n0].domain = dom0;
+      return;
+    }
+
+    // One domain
+    if (k == 1) {
+      for (int i = 0; i < n; i++)
+        points[n0 + i].domain = dom0;
+      return;
+    }
+
+    // Sort and change axis
+    dsort(points + n0, n, 1);
+    axis = !axis;
+
+    // Split ratio
+    int k1 = (k + 1) / 2;
+    int k2 = k - k1;
+    int n1 = n*(k1/(double)k);
+    int n2 = n - n1;
+
+    // Recursively split parts
+    bisect(points, n0, n1, dom0, k1);
+    bisect(points, n0 + n1, n2, dom0 + k1, k2);
+}
+
+bool connected(Point p1, Point p2, int ny)
+{
+    int i1 = p1.index / ny;
+    int j1 = p1.index % ny;
+    int i2 = p2.index / ny;
+    int j2 = p2.index % ny;
+    return (((i1 == i2) && (abs(j1 - j2) == 1)) ||
+            ((j1 == j2) && (abs(i1 - i2) == 1)));
+}
+
+int edges(Point *p, int n, int ny)
+{
+    int res = 0;
+    for (int i = p[0].domain, j = 0; j < n; i++)
+        for (; p[j].domain == i && j < n; j++) {
+            Point p1 = p[j];
+            for (int k = j + 1; p[k].domain == i && k < n; k++) {
+                Point p2 = p[k];
+                if (connected(p1, p2, ny))
+                    res++;
+            }
+        }
+    return res;
+}
+
+void write_to_file(const char *path, Point *p, int n, int ny)
+{
+    FILE *fd = fopen(path, "w");
+    if (fd) {
+        for (int i = 0; i < n; i++) {
+          Point cur = p[i];
+          fprintf(fd, "%d %d %f %f %d\n", cur.index / ny,
+                  cur.index % ny, cur.coord[0], cur.coord[1],
+                  cur.domain);
+        }
+        printf("Results written to %s\n", path);
+    } else {
+        perror(path);
+        exit(2);
+    }
+}
+
+int main(int argc, char **argv)
+{
+    int nx, ny, k;
+
+    // Parsing command line arguments
+    if (!check_args(argc, argv, nx, ny, k))
+      return 1;
+
+    int n = nx*ny;
+    srand(time(NULL));
+    Point *points = init_points(n, ny, 1, n, 0);
+
+    clock_t t = clock();
+    bisect(points, 0, n, 0, k);
+    t = clock() - t;
+
+    printf("Decomposition time: %lf sec.\n",
+           (double)t/CLOCKS_PER_SEC);
+
+    int total_edges = nx*(ny - 1) + ny*(nx - 1);
+    int cut = total_edges - edges(points, n, ny);
+    printf("Edges cut: %d of %d\n", cut, total_edges);
+
+    if (argc >= 5)
+        write_to_file(argv[4], points, n, ny);
+    return 0;
+}
+
+\end{verbatim}
+
+\chapter{Параллельный алгоритм декомпозиции} \label{app:par}
+\begin{verbatim}
+\end{verbatim}
+
+\end{document}
+
+
