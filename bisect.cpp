@@ -480,7 +480,7 @@ void bisect_seq(Point *points, int n0, int n, int dom0, int k)
     }
 
     // Sort and change axis
-    dhsort(points + n0, n);
+    dsort(points + n0, n, 1);
     axis = !axis;
 
     // Split ratio
