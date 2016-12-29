@@ -30,7 +30,7 @@ float y(int i, int j)
 bool check_args(int argc, char **argv, int &nx, int &ny, int &k)
 {
     if (argc < 4) {
-        printf("Wrong arguments. Usage: bisect_seq nx ny k\n");
+        printf("Wrong arguments. Usage: bisect_seq nx ny k [output]\n");
         return false;
     }
     int check = sscanf(argv[1], "%d", &nx);
@@ -198,6 +198,21 @@ int edges(Point *p, int n, int ny)
     return res;
 }
 
+void write_to_file(const char *path, Point *p, int n, int ny)
+{
+    FILE *fd = fopen(path, "w");
+    if (fd) {
+        for (int i = 0; i < n; i++) {
+          Point cur = p[i];
+          fprintf(fd, "%d %d %f %f %d\n", cur.index / ny, cur.index % ny, cur.coord[0], cur.coord[1], cur.domain);
+        }
+        printf("Results written to %s\n", path);
+    } else {
+        perror(path);
+        exit(2);
+    }
+}
+
 int main(int argc, char **argv)
 {
     int nx, ny, k;
@@ -220,6 +235,9 @@ int main(int argc, char **argv)
     int total_edges = nx*(ny - 1) + ny*(nx - 1);
     int cut = total_edges - edges(points, n, ny);
     printf("Edges cut: %d of %d\n", cut, total_edges);
+
+    if (argc >= 5)
+        write_to_file(argv[4], points, n, ny);
     return 0;
 }
 
