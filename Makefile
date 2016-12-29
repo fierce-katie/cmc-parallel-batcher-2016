@@ -1,11 +1,11 @@
-CXXFLAGS = -g -Wall
+CXXFLAGS = -g -Wall -O3
 MPICXX = mpicxx
 
 bisect: bisect.cpp
-	$(MPICXX) $(CXXFLAGS) -O3 $^ -lpthread -o $@
+	$(MPICXX) $(CXXFLAGS)  $^ -o $@
 
 bisect_seq: bisect_seq.cpp
-	$(MPICXX) $(CXXFLAGS) -o3 $^ -o $@
+	$(MPICXX) $(CXXFLAGS)  $^ -o $@
 
 all: bisect bisect_seq
 
