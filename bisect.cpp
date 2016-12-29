@@ -486,7 +486,7 @@ void bisect_seq(Point *points, int n0, int n, int dom0, int k)
     // Split ratio
     int k1 = (k + 1) / 2;
     int k2 = k - k1;
-    int n1 = n*k1/(double)k;
+    int n1 = n*(k1/(double)k);
     int n2 = n - n1;
 
     // Recursively bisect parts
@@ -588,7 +588,7 @@ void bisect(Point **points, int &proc_elems, int n, int k, int dom0,
     // Split ratio
     int k1 = (k + 1) / 2;
     int k2 = k - k1;
-    int n1 = n*k1/(double)k;
+    int n1 = n*(k1/(double)k);
     int n2 = n - n1;
     int middle = n1 % proc_elems;
     int procs1 = n1 / proc_elems; // on the left
@@ -702,7 +702,7 @@ int main(int argc, char **argv)
     Point *proc_points =
         init_points(n, ny, procs, proc_elems, rank);
 
-    print_points(proc_points, proc_elems, rank, "initial");
+    //print_points(proc_points, proc_elems, rank, "initial");
 
     // Decomposition
     MPI_POINT = pointType();

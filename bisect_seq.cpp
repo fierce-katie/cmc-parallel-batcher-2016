@@ -163,7 +163,7 @@ void bisect(Point *points, int n0, int n, int dom0, int k)
     // Split ratio
     int k1 = (k + 1) / 2;
     int k2 = k - k1;
-    int n1 = n*k1/(double)k;
+    int n1 = n*(k1/(double)k);
     int n2 = n - n1;
 
     // Recursively split parts
