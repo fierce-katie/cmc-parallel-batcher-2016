@@ -19,7 +19,8 @@ MPI_Datatype MPI_POINT;
 
 struct Domain {
     float coord[2];
-    int index;
+    int i;
+    int j;
     int domain;
 };
 
@@ -122,7 +123,7 @@ void print_points(Point* p, int n, int rank, const char *comment)
 bool check_args(int argc, char **argv, int &nx, int &ny, int &k)
 {
     if (argc < 4) {
-        printf("Wrong arguments. Usage: bisect nx ny k\n");
+        printf("Wrong arguments. Usage: bisect nx ny k [output]\n");
         return false;
     }
     int check = sscanf(argv[1], "%d", &nx);
@@ -568,10 +569,10 @@ void bisect(Point **points, int &proc_elems, int n, int k, int dom0,
 
 bool connected(Domain p1, Domain p2, int ny)
 {
-    int i1 = p1.index / ny;
-    int j1 = p1.index % ny;
-    int i2 = p2.index / ny;
-    int j2 = p2.index % ny;
+    int i1 = p1.i;
+    int j1 = p1.j;
+    int i2 = p2.i;
+    int j2 = p2.j;
     return (((i1 == i2) && (abs(j1 - j2) == 1)) ||
             ((j1 == j2) && (abs(i1 - i2) == 1)));
 }
@@ -604,6 +605,11 @@ int main(int argc, char **argv)
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &procs);
 
+    if (k < procs) {
+        printf("k should be >= procs");
+        return 1;
+    }
+
     // Calculating elems per processor
     int n = nx*ny;
     int fake = n % procs ? (procs - n % procs) : 0;
@@ -629,18 +635,13 @@ int main(int argc, char **argv)
     if (!rank)
         printf("Decomposition time: %f sec.\n", max_time);
 
-    /*
-    for (int i = 0; i < proc_elems; i++) {
-        Point p = proc_points[i];
-        printf("P %d %d %d %f %f %d\n", p.index, p.index / ny, p.index % ny, p.coord[0], p.coord[1], domain_array[i]);
-    }*/
-
     // Remove fake
     Domain *proc_domains = new Domain[proc_elems];
     int new_proc_elems = 0;
     for (int i = 0; i < proc_elems; i++) {
         if (proc_points[i].index != -1) {
-            proc_domains[new_proc_elems].index = proc_points[i].index;
+            proc_domains[new_proc_elems].i = proc_points[i].index / ny;
+            proc_domains[new_proc_elems].j = proc_points[i].index % ny;
             proc_domains[new_proc_elems].coord[0] = proc_points[i].coord[0];
             proc_domains[new_proc_elems].coord[1] = proc_points[i].coord[1];
             proc_domains[new_proc_elems++].domain = domain_array[i];
