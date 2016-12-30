@@ -28,14 +28,12 @@ struct Point {
 
 float x(int i, int j)
 {
-    return i;
-    //return 10*(float)rand()/(float)(RAND_MAX/(i*j+1));
+    return 10*(float)rand()/(float)(RAND_MAX/(i*j+1));
 }
 
 float y(int i, int j)
 {
-    return j;
-    //return 10*(float)rand()/(float)(RAND_MAX/(i*j+1));
+    return 10*(float)rand()/(float)(RAND_MAX/(i*j+1));
 }
 
 Point* init_points(int n, int ny, int procs, int proc_elems, int rank)
@@ -589,7 +587,7 @@ int edges(Domain *p, int n, int ny)
     return res;
 }
 
-void write_to_file(const char *path, Domain *arr, int n, int nx, int ny, int k,
+void write_to_file(char *path, Domain *arr, int n, int nx, int ny, int k,
                    int cut, int rank)
 {
     MPI_File fd;

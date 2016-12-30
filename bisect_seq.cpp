@@ -6,8 +6,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <cmath>
 
 bool axis = true;
+int n2;
 
 struct Point {
     float coord[2];
@@ -17,14 +19,12 @@ struct Point {
 
 float x(int i, int j)
 {
-    return i;
-    //return 100*(float)rand()/(float)(RAND_MAX/(i*j+1));
+    return 100*(float)rand()/(float)(RAND_MAX/(i*j+1));
 }
 
 float y(int i, int j)
 {
-    return j;
-    //return 100*(float)rand()/(float)(RAND_MAX/(i*j+1));
+    return 100*(float)rand()/(float)(RAND_MAX/(i*j+1));
 }
 
 bool check_args(int argc, char **argv, int &nx, int &ny, int &k)
@@ -223,6 +223,7 @@ int main(int argc, char **argv)
 
     int n = nx*ny;
     srand(time(NULL));
+    n2 = ny;
     Point *points = init_points(n, ny, 1, n, 0);
 
     clock_t t = clock();
