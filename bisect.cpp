@@ -674,12 +674,6 @@ int main(int argc, char **argv)
             proc_domains[new_proc_elems++].domain = domain_array[i];
         }
     }
-/*
-    for (int i = 0; i < new_proc_elems; i++) {
-        Domain d = proc_domains[i];
-        printf("D %d %d %d %f %f %d\n", d.index, d.index / ny, d.index % ny, d.coord[0], d.coord[1], d.domain);
-    }
-*/
 
     // Cut edges
     int total_edges = nx*(ny - 1) + ny*(nx - 1);
