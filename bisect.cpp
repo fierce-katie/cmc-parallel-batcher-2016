@@ -10,17 +10,14 @@
 #include <cstddef>
 #include <float.h>
 
-#define MIN_THREADS_NUM 4
-#define MAX_HSORT_ELEMS 100000
-
 bool axis = true;
 int *domain_array;
 MPI_Datatype MPI_POINT;
 
 struct Domain {
-    float coord[2];
     int i;
     int j;
+    float coord[2];
     int domain;
 };
 
@@ -591,6 +588,38 @@ int edges(Domain *p, int n, int ny)
         }
     return res;
 }
+
+void write_to_file(const char *path, Domain *arr, int n, int nx, int ny, int k,
+                   int cut, int rank)
+{
+    MPI_File fd;
+    if (MPI_File_open(MPI_COMM_WORLD, path, MPI_MODE_CREATE | MPI_MODE_WRONLY,
+                     MPI_INFO_NULL, &fd) != MPI_SUCCESS) {
+        if (!rank)
+            printf("Cannot open file %s\n", path);
+        MPI_Finalize();
+        exit(2);
+    }
+    MPI_File_set_size(fd, 0);
+
+    MPI_Datatype MPI_DOMAIN;
+    MPI_Datatype types[4] = { MPI_INT, MPI_INT, MPI_FLOAT, MPI_INT };
+    int blocks[4] = { 1, 1, 2, 1 };
+    MPI_Aint disps[4] = { offsetof(Domain, i), offsetof(Domain, j),
+                          offsetof(Domain, coord), offsetof(Domain, domain) };
+    MPI_Type_create_struct(4, blocks, disps, types, &MPI_DOMAIN);
+    MPI_Type_commit(&MPI_DOMAIN);
+
+    MPI_Status s;
+    MPI_File_write_ordered(fd, &nx, !rank, MPI_INT, &s);
+    MPI_File_write_ordered(fd, &ny, !rank, MPI_INT, &s);
+    MPI_File_write_ordered(fd, &k, !rank, MPI_INT, &s);
+    MPI_File_write_ordered(fd, &cut, !rank, MPI_INT, &s);
+    MPI_File_write_ordered(fd, arr, n, MPI_DOMAIN, &s);
+
+    MPI_File_close(&fd);
+}
+
 int main(int argc, char **argv)
 {
     int nx, ny, k;
@@ -663,6 +692,9 @@ int main(int argc, char **argv)
 
     if (!rank)
         printf("Edges cut: %d of %d\n", cut, total_edges);
+
+    if (argc >= 5)
+        write_to_file(argv[4], proc_domains, new_proc_elems, nx, ny, k, cut, rank);
 
     delete [] proc_points;
     delete [] proc_domains;
